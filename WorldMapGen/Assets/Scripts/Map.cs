@@ -1,7 +1,11 @@
 using UnityEngine;
 
+
 public class Map : MonoBehaviour
 {
+    
+    [SerializeField]
+    NoiseScript noise;
     //public GameObject plane;
     public int pixWidth = 800;
     public int pixHeight = 800;
@@ -16,18 +20,19 @@ public class Map : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
+        noise.Test();
+        CreateMap();
     }
 
     // Update is called once per frame
     void Update()
     {
-        CreateMap();
+        
         //plane.GetComponent<MeshRenderer>
-        this.GetComponent<MeshRenderer>().material.mainTexture = noiseTex;
+        
     }
 
-    void CreateMap()
+    public void CreateMap()
     {
         // Set up the texture and a Color array to hold pixels during processing.
         noiseTex = new Texture2D(pixWidth, pixHeight);
@@ -71,5 +76,7 @@ public class Map : MonoBehaviour
         // Copy the pixel data to the texture and load it into the GPU.
         noiseTex.SetPixels(pix);
         noiseTex.Apply();
+
+        this.GetComponent<MeshRenderer>().material.mainTexture = noiseTex;
     }
 }
