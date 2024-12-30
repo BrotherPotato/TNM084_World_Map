@@ -1,11 +1,14 @@
 using UnityEngine;
-
+using static Unity.Mathematics.math;
+using Unity.Mathematics;
+// noise functions
+// https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/api/Unity.Mathematics.noise.html
 
 public class Map : MonoBehaviour
 {
     
     [SerializeField]
-    NoiseScript noise;
+    NoiseScript noiseSc;
     //public GameObject plane;
     public int pixWidth = 800;
     public int pixHeight = 800;
@@ -20,7 +23,7 @@ public class Map : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        noise.Test();
+        noiseSc.Test();
         CreateMap();
     }
 
@@ -37,7 +40,7 @@ public class Map : MonoBehaviour
         // Set up the texture and a Color array to hold pixels during processing.
         noiseTex = new Texture2D(pixWidth, pixHeight);
         Color[] pix = new Color[noiseTex.width * noiseTex.height];
-        float randomorg = Random.Range(0, 100);
+        float randomorg = UnityEngine.Random.Range(0, 100);
 
         // For each pixel in the texture...
         float y = 0.0F;
@@ -76,6 +79,49 @@ public class Map : MonoBehaviour
         // Copy the pixel data to the texture and load it into the GPU.
         noiseTex.SetPixels(pix);
         noiseTex.Apply();
+
+        
+
+        this.GetComponent<MeshRenderer>().material.mainTexture = noiseTex;
+       
+    }
+
+    public void FBMtex(){
+        // Set up the texture and a Color array to hold pixels during processing.
+        noiseTex = new Texture2D(pixWidth, pixHeight);
+        Color[] pix = new Color[noiseTex.width * noiseTex.height];
+        float randomorg = UnityEngine.Random.Range(0, 100);
+
+        // For each pixel in the texture...
+        float y = 0.0F;
+        while (y < noiseTex.height)
+        {
+            float x = 0.0F;
+            while (x < noiseTex.width)
+            {
+
+                float2 currentPoint = float2(x,y);
+
+                float xCoord = randomorg + x / noiseTex.width * scale;
+                float yCoord = randomorg + y / noiseTex.height * scale;
+
+                currentPoint = float2(xCoord, yCoord);
+
+                // .x -> vanlig .y -> cool men skum
+                Color greyScale = new Color(noise.cellular(currentPoint).x, 0, 1-noise.cellular(currentPoint).x);
+                
+                pix[(int)y * noiseTex.width + (int)x] = greyScale;
+
+
+                x++;
+            }
+            y++;
+        }
+        // Copy the pixel data to the texture and load it into the GPU.
+        noiseTex.SetPixels(pix);
+        noiseTex.Apply();
+
+
 
         this.GetComponent<MeshRenderer>().material.mainTexture = noiseTex;
     }
