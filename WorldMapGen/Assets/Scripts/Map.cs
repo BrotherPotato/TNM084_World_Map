@@ -63,7 +63,7 @@ public class Map : MonoBehaviour
 
         // For each pixel in the texture...
         float y = 0.0F;
-        scale = scale * 5;
+        scale = GameObject.Find("Scale Slider").GetComponent<Slider>().value * 5;
 
         while (y < noiseTex.height)
         {
