@@ -496,7 +496,7 @@ GameObject:
   - component: {fileID: 1532733544}
   - component: {fileID: 1532733543}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: Map
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -514,8 +514,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d2074425c301de4790338f35b33c218, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  xSize: 10
-  ySize: 5
+  xSize: 25
+  zSize: 25
 --- !u!23 &1532733544
 MeshRenderer:
   m_ObjectHideFlags: 0
