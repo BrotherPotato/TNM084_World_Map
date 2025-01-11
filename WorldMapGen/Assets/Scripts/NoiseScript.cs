@@ -7,9 +7,23 @@ using Unity.Mathematics;
 
 public class NoiseScript : MonoBehaviour
 {
+
+    
     public void Test()
     {
         Debug.Log("AAAAAAA");
+    }
+
+    // FÖR ATT ANVÄNDA APPLY HEIGHT
+    [SerializeField] Grid mesh;
+    void Start(){
+        float[] heightMap = new float[(mesh.xSize + 1) * (mesh.zSize + 1)];
+		for (int i = 0, z = 0; z <= mesh.zSize; z++) {
+			for (int x = 0; x <= mesh.xSize; x++, i++) {
+				heightMap[i] = UnityEngine.Random.Range(0f, 1f);
+			}
+		}
+        mesh.ApplyHeight(heightMap);
     }
 
     public Texture2D FBMtexture()

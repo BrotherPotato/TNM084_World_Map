@@ -8,6 +8,7 @@ using System.Collections;
 public class Grid : MonoBehaviour
 {
     public int xSize, zSize;
+	public float scale = 0.5f;
 
     private Vector3[] vertices;
 
@@ -16,8 +17,10 @@ public class Grid : MonoBehaviour
     private void Awake () {
         //Generate();
         Generate();
+		//ApplyHeight(GenerateRandomHeightMap());
     }
 
+	// 800 x 800 är för mycket för gizmos
     private void OnDrawGizmos () {
         if (vertices == null) {
 			return;
@@ -39,7 +42,7 @@ public class Grid : MonoBehaviour
 
 		for (int i = 0, z = 0; z <= zSize; z++) {
 			for (int x = 0; x <= xSize; x++, i++) {
-				vertices[i] = new Vector3(x, 0, z);
+				vertices[i] = new Vector3(x * scale, 0, z * scale);
                 uv[i] = new Vector2((float)x / xSize, (float)z / zSize);
                 tangents[i] = tangent;
 			}
@@ -59,6 +62,30 @@ public class Grid : MonoBehaviour
 		}
 		mesh.triangles = triangles;
         mesh.RecalculateNormals();
+	}
+
+	private float[] GenerateRandomHeightMap(){
+		float[] heightMap = new float[(xSize + 1) * (zSize + 1)];
+		for (int i = 0, z = 0; z <= zSize; z++) {
+			for (int x = 0; x <= xSize; x++, i++) {
+				heightMap[i] = Random.Range(0f, 1f);
+			}
+		}
+		return heightMap;
+	}
+
+	public void ApplyHeight(float[] heightMap){
+
+		for (int i = 0, z = 0; z <= zSize; z++) {
+			for (int x = 0; x <= xSize; x++, i++) {
+				vertices[i] = mesh.vertices[i] + new Vector3(0, heightMap[i], 0);
+				//mesh.vertices[i] = new Vector3(x * scale, heightMap[i], z * scale);
+                //mesh.uv[i] = new Vector2((float)x / xSize, (float)z / zSize);
+                //mesh.tangents[i] = tangent;
+			}
+		}
+		mesh.vertices = vertices;
+		mesh.RecalculateNormals();
 	}
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
