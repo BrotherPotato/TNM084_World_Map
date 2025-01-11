@@ -1,16 +1,20 @@
 using UnityEngine;
 using System.Collections;
+using System.Diagnostics;
+using System.Collections.Generic;
 
 // https://catlikecoding.com/unity/tutorials/procedural-grid/
 // early check transform
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
-public class Grid : MonoBehaviour
+public class MapGrid : MonoBehaviour
 {
     public int xSize, zSize;
 	public float scale = 0.5f;
 
     private Vector3[] vertices;
+
+	public Material mapMat;
 
     private Mesh mesh;
 
@@ -18,6 +22,18 @@ public class Grid : MonoBehaviour
         //Generate();
         Generate();
 		//ApplyHeight(GenerateRandomHeightMap());
+    }
+
+	// Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        GenerateMaterial();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
     }
 
 	// 800 x 800 är för mycket för gizmos
@@ -79,24 +95,28 @@ public class Grid : MonoBehaviour
 		for (int i = 0, z = 0; z <= zSize; z++) {
 			for (int x = 0; x <= xSize; x++, i++) {
 				vertices[i] = mesh.vertices[i] + new Vector3(0, heightMap[i], 0);
-				//mesh.vertices[i] = new Vector3(x * scale, heightMap[i], z * scale);
-                //mesh.uv[i] = new Vector2((float)x / xSize, (float)z / zSize);
-                //mesh.tangents[i] = tangent;
 			}
 		}
 		mesh.vertices = vertices;
 		mesh.RecalculateNormals();
 	}
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
+	private void GenerateMaterial(){
+		MeshRenderer meshR = GetComponent<MeshRenderer>();
+		UnityEngine.Debug.Log(meshR);
+		Texture2D mapTexture = new Texture2D(xSize, zSize);
+		
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+		for (int x = 0; x < xSize; x++)
+		{
+			for (int z = 0; z < zSize; z++)
+			{
+				mapTexture.SetPixel(x,z, new Color(1,1,0));
+			}
+		}
+		mapTexture.Apply();
+		mapMat.mainTexture = mapTexture;
+	}
+
+
 }

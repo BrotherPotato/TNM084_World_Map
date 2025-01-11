@@ -15,7 +15,7 @@ public class NoiseScript : MonoBehaviour
     }
 
     // FÖR ATT ANVÄNDA APPLY HEIGHT
-    [SerializeField] Grid mesh;
+    [SerializeField] MapGrid mesh;
     void Start(){
         float[] heightMap = new float[(mesh.xSize + 1) * (mesh.zSize + 1)];
 		for (int i = 0, z = 0; z <= mesh.zSize; z++) {

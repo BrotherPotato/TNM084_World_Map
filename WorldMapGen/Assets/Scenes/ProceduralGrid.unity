@@ -514,9 +514,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d2074425c301de4790338f35b33c218, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  xSize: 250
-  zSize: 250
+  xSize: 50
+  zSize: 50
   scale: 0.5
+  mapMat: {fileID: 2100000, guid: 8b7d145b7468cda4fa9df73cb40f3db1, type: 2}
 --- !u!23 &1532733544
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -540,7 +541,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 15303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 8b7d145b7468cda4fa9df73cb40f3db1, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
