@@ -27,7 +27,7 @@ public class MapGrid : MonoBehaviour
 	// Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        GenerateMaterial();
+        //GenerateMaterial();
     }
 
     // Update is called once per frame
@@ -101,22 +101,22 @@ public class MapGrid : MonoBehaviour
 		mesh.RecalculateNormals();
 	}
 
-	private void GenerateMaterial(){
-		MeshRenderer meshR = GetComponent<MeshRenderer>();
-		UnityEngine.Debug.Log(meshR);
-		Texture2D mapTexture = new Texture2D(xSize, zSize);
+	// private void GenerateMaterial(){
+	// 	MeshRenderer meshR = GetComponent<MeshRenderer>();
+	// 	UnityEngine.Debug.Log(meshR);
+	// 	Texture2D mapTexture = new Texture2D(xSize, zSize);
 		
 
-		for (int x = 0; x < xSize; x++)
-		{
-			for (int z = 0; z < zSize; z++)
-			{
-				mapTexture.SetPixel(x,z, new Color(1,1,0));
-			}
-		}
-		mapTexture.Apply();
-		mapMat.mainTexture = mapTexture;
-	}
+	// 	for (int x = 0; x < xSize; x++)
+	// 	{
+	// 		for (int z = 0; z < zSize; z++)
+	// 		{
+	// 			mapTexture.SetPixel(x,z, new Color(1,1,0));
+	// 		}
+	// 	}
+	// 	mapTexture.Apply();
+	// 	mapMat.mainTexture = mapTexture;
+	// }
 
 
 }

@@ -514,8 +514,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d2074425c301de4790338f35b33c218, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  xSize: 50
-  zSize: 50
+  xSize: 200
+  zSize: 200
   scale: 0.5
   mapMat: {fileID: 2100000, guid: 8b7d145b7468cda4fa9df73cb40f3db1, type: 2}
 --- !u!23 &1532733544
@@ -596,6 +596,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1871067803}
   - component: {fileID: 1871067802}
+  - component: {fileID: 1871067804}
   m_Layer: 0
   m_Name: TestNoiseAdder
   m_TagString: Untagged
@@ -610,7 +611,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1871067801}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d75c99b727b67a947915847bd8412b15, type: 3}
   m_Name: 
@@ -631,6 +632,28 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1871067804
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1871067801}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0a4433040c3d8e4aa7620380edf0a92, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  noiseSc: {fileID: 0}
+  pixWidth: 800
+  pixHeight: 800
+  water: {r: 0, g: 0, b: 1, a: 1}
+  sand: {r: 0.9, g: 0.8, b: 0.5, a: 1}
+  grass: {r: 0.1, g: 1, b: 0.1, a: 1}
+  forest: {r: 0.4, g: 1, b: 0.4, a: 1}
+  mountains: {r: 1, g: 1, b: 1, a: 1}
+  mesh: {fileID: 1532733543}
+  mapMat: {fileID: 2100000, guid: 8b7d145b7468cda4fa9df73cb40f3db1, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

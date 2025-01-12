@@ -14,7 +14,7 @@ public class WorleyPoint{
     }
 
     public Vector3 pos; // z är höjd
-    public Color col;
+    public Color col; // färg används för att särskilja kluster av celler
 
 }
 
@@ -27,7 +27,6 @@ public class test : MonoBehaviour
     //public GameObject plane;
     public int pixWidth = 800;
     public int pixHeight = 800;
-    Texture2D noiseTex;
     float scale = 1.0f;
     public Color water = new Color(0.0f, 0.0f, 1.0f, 1.0f);
     public Color sand = new Color(0.9f, 0.8f, 0.5f, 1.0f);
@@ -39,143 +38,45 @@ public class test : MonoBehaviour
     private TextureTypes currentTexture = TextureTypes.Map;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        scale = GameObject.Find("Scale Slider").GetComponent<Slider>().value;
-        Worley();
+
+    [SerializeField] MapGrid mesh;
+    public Material mapMat;
+
+    float[] heightMap;
+    void Start(){
+
+        Texture2D[] texs = Worley();
+        //this.GetComponent<MeshRenderer>().material.mainTexture = texs[1];
+
+        mapMat.mainTexture = texs[1];
+        heightMap = readTexture(texs[0]);
+        mesh.ApplyHeight(heightMap);
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
+    float[] readTexture(Texture2D tex){
+
+        // hur överför man koordinaterna för 800x800 till meshets lägre upplösning ????
+
+        float[] heightMap = new float[(mesh.xSize + 1) * (mesh.zSize + 1)];
+        for (int i = 0, z = 0; z <= mesh.zSize; z++) {
+			for (int x = 0; x <= mesh.xSize; x++, i++) {
+                int xx = (pixHeight * x) / mesh.xSize; // eftersom texturen är högre resolution
+                int zz = (pixHeight * z) / mesh.xSize;
+				heightMap[i] = tex.GetPixel(xx,zz).maxColorComponent * 25f; // svårt att välja rätt höjd
+			}
+		}
+        return heightMap;
     }
 
+    // denna används bara i scenen där man testar noiset
     public void UpdateScale(){
         scale = GameObject.Find("Scale Slider").GetComponent<Slider>().value;
-
-        if(currentTexture == TextureTypes.Map){
-            Worley();
-        }
-        if(currentTexture == TextureTypes.Cellular){
-            CellularTex();
-        }
-    }
-
-    public void CreateMap()
-    {
-        currentTexture = TextureTypes.Map;
-        // Set up the texture and a Color array to hold pixels during processing.
-        noiseTex = new Texture2D(pixWidth, pixHeight);
-        Color[] pix = new Color[noiseTex.width * noiseTex.height];
-        float randomorg = UnityEngine.Random.Range(0, 100);
-
-        // For each pixel in the texture...
-        float y = 0.0F;
-        scale = GameObject.Find("Scale Slider").GetComponent<Slider>().value * 5;
-
-        while (y < noiseTex.height)
-        {
-            float x = 0.0F;
-            while (x < noiseTex.width)
-            {
-                float xCoord = randomorg + x / noiseTex.width * scale;
-                float yCoord = randomorg + y / noiseTex.height * scale;
-                float sample = Mathf.PerlinNoise(xCoord, yCoord);
-
-                if (sample == Mathf.Clamp(sample, 0, 0.5f))
-                    pix[(int)y * noiseTex.width + (int)x] = water;
-                else if (sample == Mathf.Clamp(sample, 0.5f, 0.6f))
-                    pix[(int)y * noiseTex.width + (int)x] = sand;
-                else if (sample == Mathf.Clamp(sample, 0.6f, 0.7f))
-                    pix[(int)y * noiseTex.width + (int)x] = grass;
-                else if (sample == Mathf.Clamp(sample, 0.7f, 0.8f))
-                    pix[(int)y * noiseTex.width + (int)x] = forest;
-                else if (sample == Mathf.Clamp(sample, 0.8f, 1f))
-                    pix[(int)y * noiseTex.width + (int)x] = mountains;
-                else
-                    pix[(int)y * noiseTex.width + (int)x] = water;
-
-                x++;
-            }
-            y++;
-        }
-        // Copy the pixel data to the texture and load it into the GPU.
-        noiseTex.SetPixels(pix);
-        noiseTex.Apply();
+        Texture2D noiseTex = Worley()[0];
         this.GetComponent<MeshRenderer>().material.mainTexture = noiseTex;
     }
 
-    public void CellularTex(){
-        currentTexture = TextureTypes.Cellular;
-        // Set up the texture and a Color array to hold pixels during processing.
-        noiseTex = new Texture2D(pixWidth, pixHeight);
-        Color[] pix = new Color[noiseTex.width * noiseTex.height];
-        float randomorg = UnityEngine.Random.Range(0, 100);
+    WorleyPoint[] ScatterPoints(int pointsPerRow) {
 
-        Color greyScale = new Color(0, 0, 0);
-
-
-        // For each pixel in the texture...
-        float y = 0.0F;
-        while (y < noiseTex.height)
-        {
-            float x = 0.0F;
-            while (x < noiseTex.width)
-            {
-
-                float2 currentPoint = float2(x,y);
-                float xCoord = randomorg + x / noiseTex.width * scale;
-                float yCoord = randomorg + y / noiseTex.height * scale;
-                currentPoint = float2(xCoord, yCoord);
-                
-                
-                // berg på flera oktaver
-                float tot = 0.0f;
-                float frq = 1.0f;
-                float amp = 1.0f;
-                float sample = 0.0f;
-                float noiseXY = 0.0f;
-                for (int i = 0; i < 5; i++){
-                    noiseXY = noise.cellular(currentPoint * frq).x * noise.cellular(currentPoint * frq).y;
-                    sample += noiseXY * amp;
-                    tot += amp;
-                    amp *= 0.5f;
-                    frq *= 2.0f;
-                }
-                sample /= tot;
-                
-                // havsnivå
-                if (sample < 0.33f) sample = 0.0f;
-                greyScale = new Color(sample,sample,sample);
-
-                pix[(int)y * noiseTex.width + (int)x] *= grass * greyScale;
-                if (sample == 0.0f) pix[(int)y * noiseTex.width + (int)x] = water;
-
-
-                x++;
-            }
-            y++;
-        }
-
-        // Copy the pixel data to the texture and load it into the GPU.
-        noiseTex.SetPixels(pix);
-        noiseTex.Apply();
-
-
-        this.GetComponent<MeshRenderer>().material.mainTexture = noiseTex;
-    }
-
-
-
-    // typ baserad på https://youtu.be/4066MndcyCk
-    public void Worley(){
-        noiseTex = new Texture2D(pixWidth, pixHeight);
-        Color[] pix = new Color[noiseTex.width * noiseTex.height];
-        float randomorg = UnityEngine.Random.Range(0, 100);
-
-        // Strö ut worley points
-        int pointsPerRow = 10; // antalet punkter är dennas kvadrat
         WorleyPoint[] points = new WorleyPoint[pointsPerRow * pointsPerRow];
         float increment = 1f / (float)pointsPerRow;
         int i2 = 0;
@@ -189,14 +90,17 @@ public class test : MonoBehaviour
 
                 // Random färg
                 Color color = Color.HSVToRGB(UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0f, 0.5f), 1f);
-                if (zRand < 0.1f) color = new Color(0f,0f,0f); // chans att vara vatten
+                //if (zRand < 0.1f) color = new Color(0f,0f,0f); // chans att vara vatten
                 
                 points[i2] = new WorleyPoint(position,color);  
                 i2++;
             }
         }
+        return points;
+    }
 
-        // Klumpa samman celler
+    WorleyPoint[] ClusterPoints(WorleyPoint[] points) {
+        int pointsPerRow = (int)sqrt(points.Length);
         for (int i = 0; i < points.Length; i++) {
             int secondIndex = i;
             if (UnityEngine.Random.Range(0f, 1f) < 1f) { // chans att klumpa med granne
@@ -205,7 +109,7 @@ public class test : MonoBehaviour
                         if (i - pointsPerRow >= 0) secondIndex = i - pointsPerRow;
                    }
                     else { // under
-                        if (i2 + pointsPerRow < points.Length) secondIndex = i + pointsPerRow;
+                        if (i + pointsPerRow < points.Length) secondIndex = i + pointsPerRow;
                     }            
                 }
                 else { // 50% chans att klumpa med punkten höger eller vänster
@@ -220,12 +124,28 @@ public class test : MonoBehaviour
                 points[i].pos.z = points[secondIndex].pos.z;
             }
         }
+        return points;
+    }
 
-        // Gör ramen svart
-        i2 = 0;
+    // typ baserad på https://youtu.be/4066MndcyCk
+    public Texture2D[] Worley(){
+
+        Texture2D noiseTex = new Texture2D(pixWidth, pixHeight);
+        Texture2D cellTex = new Texture2D(pixWidth, pixHeight);
+        Color[] pix = new Color[noiseTex.width * noiseTex.height];
+        Color[] pix2 = new Color[noiseTex.width * noiseTex.height];
+        float randomorg = UnityEngine.Random.Range(0, 100);
+
+        // Strö ut worley points
+        int pointsPerRow = 10;
+        WorleyPoint[] points = ScatterPoints(pointsPerRow);
+        points = ClusterPoints(points);
+
+        // Gör ramen till hav
+        int i2 = 0;
+        float increment = 1f / (float)pointsPerRow;
         for (float yf = 0f; yf < 1f; yf += increment) {
             for (float xf = 0f; xf < 1f; xf += increment) {
-
                 // Gör kantpunkterna svarta, ser typ ut som hav.
                 if ((xf + (2*increment) >= 1f || xf <= increment) || (yf + (2*increment) >= 1f || yf <= increment)) { 
                     points[i2].col = new Color(0f, 0f, 0f);
@@ -260,14 +180,9 @@ public class test : MonoBehaviour
                 // Leta efter närmsta punkt som inte tillhör den aktuella klumpen.
                 j = 0;
                 for (int i = 1; i < sortedPoints.Length; i++){
-                    // Om det är samma färg. Gå vidare.
-                    if ((sortedPoints[0].col.r == sortedPoints[i].col.r &&
-                        sortedPoints[0].col.g == sortedPoints[i].col.g &&
-                        sortedPoints[0].col.b == sortedPoints[i].col.b)) {
-                        continue; 
-                    }
-                    // Om det är en ny färg eller vatten. Stanna.
-                    else {
+                    if ((sortedPoints[0].col.r != sortedPoints[i].col.r ||
+                        sortedPoints[0].col.g != sortedPoints[i].col.g ||
+                        sortedPoints[0].col.b != sortedPoints[i].col.b)) {
                         j = i;
                         break;
                     }
@@ -276,28 +191,31 @@ public class test : MonoBehaviour
 
                 // berg på flera oktaver
                 float sample = 0.0f;
-                float amp = sortedPoints[0].pos.z;
+                float amp = sortedPoints[0].pos.z; // varje cell har ett z-värde mellan 0-1
                 float tot = 0.0f;
                 float frq = 1.0f;
                 float2 currentPoint = float2((xCoord + randomorg) * scale, (yCoord + randomorg) * scale);
                 for (int i = 0; i < 5; i++){
-                    float noiseXY = noise.cellular(currentPoint * frq).x * noise.cellular(currentPoint * frq).y;
-                    sample += noiseXY * amp;
+                    sample += amp * noise.cellular(currentPoint * frq).x * noise.cellular(currentPoint * frq).y;
                     tot += amp;
                     amp *= 0.5f;
                     frq *= 2.0f;
                 }
                 sample /= tot;
-                sample *= val;
-                if (sample < 0.35f) sample = 0f;
 
+                sample *= sqrt(val);
+                if (sample < 0.25f) sample = 0.25f; 
+                sample = (sample - 0.25f) / (1f - 0.25f);
+                sample = pow(sample,2f);
+
+                // Denna kommer användas som height map
                 Color pixelCol = new Color(sample,sample,sample); 
-                if (sample == 0f) pixelCol = new Color(0f, 0.5f, 1f);
-
-                // För att visa klustrerna som overlays.
-                //pixelCol = (pixelCol + sortedPoints[0].col) / 2f;
-                
                 pix[(int)y * noiseTex.width + (int)x] = pixelCol;
+
+                // Färgläggning för meshet WIP
+                Color col2 = sortedPoints[0].col; 
+                pix2[(int)y * noiseTex.width + (int)x] = col2 * pixelCol * 10f;
+
                 x++;
             }
             y++;
@@ -306,6 +224,11 @@ public class test : MonoBehaviour
         // Copy the pixel data to the texture and load it into the GPU.
         noiseTex.SetPixels(pix);
         noiseTex.Apply();
-        this.GetComponent<MeshRenderer>().material.mainTexture = noiseTex;
+        cellTex.SetPixels(pix2);
+        cellTex.Apply();
+
+        Texture2D[] texs = {noiseTex, cellTex};
+        return texs;
+        
     }
 }
