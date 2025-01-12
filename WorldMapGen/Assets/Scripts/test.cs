@@ -27,7 +27,7 @@ public class test : MonoBehaviour
     //public GameObject plane;
     public int pixWidth = 800;
     public int pixHeight = 800;
-    float scale = 1.0f;
+    float scale = 5f;
     public Color water = new Color(0.0f, 0.0f, 1.0f, 1.0f);
     public Color sand = new Color(0.9f, 0.8f, 0.5f, 1.0f);
     public Color grass = new Color(0.1f, 1.0f, 0.1f, 1.0f);
@@ -46,23 +46,27 @@ public class test : MonoBehaviour
     void Start(){
 
         Texture2D[] texs = Worley();
-        //this.GetComponent<MeshRenderer>().material.mainTexture = texs[1];
+        Texture2D heightTex = texs[0];
+        //this.GetComponent<MeshRenderer>().material.mainTexture = heightTex;
 
         mapMat.mainTexture = texs[1];
-        heightMap = readTexture(texs[0]);
+        heightMap = readTexture(heightTex);
         mesh.ApplyHeight(heightMap);
     }
 
     float[] readTexture(Texture2D tex){
 
-        // hur överför man koordinaterna för 800x800 till meshets lägre upplösning ????
 
         float[] heightMap = new float[(mesh.xSize + 1) * (mesh.zSize + 1)];
         for (int i = 0, z = 0; z <= mesh.zSize; z++) {
 			for (int x = 0; x <= mesh.xSize; x++, i++) {
-                int xx = (pixHeight * x) / mesh.xSize; // eftersom texturen är högre resolution
-                int zz = (pixHeight * z) / mesh.xSize;
-				heightMap[i] = tex.GetPixel(xx,zz).maxColorComponent * 25f; // svårt att välja rätt höjd
+
+                float xrat = (float)x / (float)mesh.xSize;
+                float zrat = (float)z / (float)mesh.zSize;
+                float xx = pixHeight * xrat;
+                float zz = pixHeight * zrat;
+
+				heightMap[i] = tex.GetPixel((int)xx,(int)zz).maxColorComponent * 10f; // svårt att välja rätt höjd
 			}
 		}
         return heightMap;
@@ -90,7 +94,6 @@ public class test : MonoBehaviour
 
                 // Random färg
                 Color color = Color.HSVToRGB(UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0f, 0.5f), 1f);
-                //if (zRand < 0.1f) color = new Color(0f,0f,0f); // chans att vara vatten
                 
                 points[i2] = new WorleyPoint(position,color);  
                 i2++;
@@ -103,26 +106,24 @@ public class test : MonoBehaviour
         int pointsPerRow = (int)sqrt(points.Length);
         for (int i = 0; i < points.Length; i++) {
             int secondIndex = i;
-            if (UnityEngine.Random.Range(0f, 1f) < 1f) { // chans att klumpa med granne
-                if (UnityEngine.Random.Range(0f, 1f) < 0.5f){ // 50% chans att klumpa med punkten ovanför eller under
-                    if (UnityEngine.Random.Range(0f, 1f) < 0.5f) { // över
-                        if (i - pointsPerRow >= 0) secondIndex = i - pointsPerRow;
-                   }
-                    else { // under
-                        if (i + pointsPerRow < points.Length) secondIndex = i + pointsPerRow;
-                    }            
-                }
-                else { // 50% chans att klumpa med punkten höger eller vänster
-                    if (UnityEngine.Random.Range(0f, 1f) < 0.5f) { // höger
-                        if (i - 1 >= 0) secondIndex = i - 1;
-                    }
-                    else { // vänster
-                        if (i + 1 < points.Length) secondIndex = i + 1;
-                    }
-                } 
-                points[i].col = points[secondIndex].col;
-                points[i].pos.z = points[secondIndex].pos.z;
+            if (UnityEngine.Random.Range(0f, 1f) < 0.5f){ // 50% chans att klumpa med punkten ovanför eller under
+                if (UnityEngine.Random.Range(0f, 1f) < 0.5f) { // över
+                    if (i - pointsPerRow >= 0) secondIndex = i - pointsPerRow;
+               }
+                else { // under
+                    if (i + pointsPerRow < points.Length) secondIndex = i + pointsPerRow;
+                }            
             }
+            else { // 50% chans att klumpa med punkten höger eller vänster
+                if (UnityEngine.Random.Range(0f, 1f) < 0.5f) { // höger
+                    if (i - 1 >= 0) secondIndex = i - 1;
+                }
+                else { // vänster
+                    if (i + 1 < points.Length) secondIndex = i + 1;
+                }
+            } 
+            points[i].col = points[secondIndex].col;
+            points[i].pos.z = points[secondIndex].pos.z;
         }
         return points;
     }
@@ -149,7 +150,7 @@ public class test : MonoBehaviour
                 // Gör kantpunkterna svarta, ser typ ut som hav.
                 if ((xf + (2*increment) >= 1f || xf <= increment) || (yf + (2*increment) >= 1f || yf <= increment)) { 
                     points[i2].col = new Color(0f, 0f, 0f);
-                    points[i2].pos.z = 0.1f;
+                    points[i2].pos.z = 0.01f;
                 }
                 i2++;
             }
@@ -172,7 +173,7 @@ public class test : MonoBehaviour
                 int j = 0;
                 foreach(WorleyPoint p in points){
                     float dis = Vector2.Distance(p.pos,curPoint) * 5f; // dis är för lågt
-                    distances[j] = dis; 
+                    distances[j] = Mathf.Clamp(dis,0f,1f); 
                     j++;
                 }
                 Array.Sort(distances, sortedPoints);
@@ -203,18 +204,18 @@ public class test : MonoBehaviour
                 }
                 sample /= tot;
 
-                sample *= sqrt(val);
-                if (sample < 0.25f) sample = 0.25f; 
-                sample = (sample - 0.25f) / (1f - 0.25f);
-                sample = pow(sample,2f);
+                sample *= sqrt(val); // platta till kontinenter
+                if (sample < 0.35f) sample = 0f; // separera landmassor från havsbotten
+                sample = pow(sample,2f); // förstärk bergen
 
                 // Denna kommer användas som height map
                 Color pixelCol = new Color(sample,sample,sample); 
+                
                 pix[(int)y * noiseTex.width + (int)x] = pixelCol;
 
                 // Färgläggning för meshet WIP
                 Color col2 = sortedPoints[0].col; 
-                pix2[(int)y * noiseTex.width + (int)x] = col2 * pixelCol * 10f;
+                pix2[(int)y * noiseTex.width + (int)x] =  col2;
 
                 x++;
             }
