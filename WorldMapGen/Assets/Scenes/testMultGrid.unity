@@ -582,11 +582,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c6238cf074ad72d49a790c5fec5ac274, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  xTileSize: 5
-  zTileSize: 5
+  tileSize: 5
   numberOfTiles: 5
   tileScale: 0.5
-  tileMaterial: []
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -11,7 +11,8 @@ using System;
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class MapGridTile : MonoBehaviour
 {
-    public int xTileSize, zTileSize;
+    public int tileSize;
+	private int xTileSize, zTileSize;
 	public int numberOfTiles = 3;
 	public float tileScale = 0.5f;
 	private Mesh[] meshes;
@@ -21,6 +22,7 @@ public class MapGridTile : MonoBehaviour
 
     private void Awake () {
         //Generate();
+		xTileSize = zTileSize = tileSize;
 		meshes = new Mesh[numberOfTiles*numberOfTiles];
 		tileVertices = new Vector3[meshes.Length][];
         GenerateTiles();
@@ -144,9 +146,7 @@ public class MapGridTile : MonoBehaviour
 		return heightMap;
 	}
 
-	private void GenerateMaterial(){
-		
-		
+	private void GenerateMaterial(){	
 		for (int tile = 0; tile < meshes.Length; tile++) {
 			GameObject currentTile = transform.Find("Tile nr:" + tile).gameObject;
 
@@ -163,11 +163,11 @@ public class MapGridTile : MonoBehaviour
 			}
 			mapTexture.Apply();
 
-			Material tileMaterial = new Material(Shader.Find("Unlit/Texture"));
+			Material tileMaterial = new Material(Shader.Find("Shader Graphs/MapShader"));
 
-			tileMaterial.mainTexture = mapTexture;
+			//tileMaterial.mainTexture = mapTexture;
 
-			tileMaterial.SetTexture("_MainTex", mapTexture);
+			tileMaterial.SetTexture("_Texture2D", mapTexture);
 
 			meshRend.material = tileMaterial;
 		}
