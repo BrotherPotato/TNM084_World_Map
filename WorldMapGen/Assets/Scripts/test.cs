@@ -34,35 +34,53 @@ public class test : MonoBehaviour
     public Color forest = new Color(0.4f, 1.0f, 0.4f, 1.0f);
     public Color mountains = new Color(1.0f, 1.0f, 1.0f, 1.0f);
 
+    public float seaLevel = 0.35f;
+
     enum TextureTypes {Map, Cellular}
     private TextureTypes currentTexture = TextureTypes.Map;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
 
     [SerializeField] MapGrid mesh;
+    [SerializeField] MapGridTile meshes;
     public Material mapMat;
 
-    float[] heightMap;
+    Texture2D[] texs;
+
     void Start(){
 
-        Texture2D[] texs = Worley();
-        Texture2D heightTex = texs[0];
-        //this.GetComponent<MeshRenderer>().material.mainTexture = heightTex;
+        texs = Worley();
+        //this.GetComponent<MeshRenderer>().material.mainTexture = texs[0];
 
-        mapMat.mainTexture = texs[1];
-        heightMap = readTexture(heightTex);
+        mapMat.mainTexture = texs[2];
+        float[] heightMap = readTexture(texs[0]);
         mesh.ApplyHeight(heightMap);
+
+        //meshes.ApplyHeight(heightMap);
+    }
+
+    public void refresh() {texs = Worley();}
+
+    public void showHeight() {
+        currentTexture = TextureTypes.Map;
+        this.GetComponent<MeshRenderer>().material.mainTexture = texs[0];
+    }
+    public void showCell() {
+        currentTexture = TextureTypes.Cellular;
+        this.GetComponent<MeshRenderer>().material.mainTexture = texs[2];
     }
 
     float[] readTexture(Texture2D tex){
 
+        int meshWidth = mesh.xSize; // för single grid
+        //int meshWidth = meshes.tileSize; // för tiles, funkar inte just nu
 
-        float[] heightMap = new float[(mesh.xSize + 1) * (mesh.zSize + 1)];
-        for (int i = 0, z = 0; z <= mesh.zSize; z++) {
-			for (int x = 0; x <= mesh.xSize; x++, i++) {
+        float[] heightMap = new float[(meshWidth + 1) * (meshWidth + 1)];
+        for (int i = 0, z = 0; z <= meshWidth; z++) {
+			for (int x = 0; x <= meshWidth; x++, i++) {
 
-                float xrat = (float)x / (float)mesh.xSize;
-                float zrat = (float)z / (float)mesh.zSize;
+                float xrat = (float)x / (float)meshWidth;
+                float zrat = (float)z / (float)meshWidth;
                 float xx = pixHeight * xrat;
                 float zz = pixHeight * zrat;
 
@@ -75,8 +93,13 @@ public class test : MonoBehaviour
     // denna används bara i scenen där man testar noiset
     public void UpdateScale(){
         scale = GameObject.Find("Scale Slider").GetComponent<Slider>().value;
-        Texture2D noiseTex = Worley()[0];
-        this.GetComponent<MeshRenderer>().material.mainTexture = noiseTex;
+        refresh();
+        if(currentTexture == TextureTypes.Map){
+            showHeight();
+        }
+        if(currentTexture == TextureTypes.Cellular){
+            showCell();
+        }
     }
 
     WorleyPoint[] ScatterPoints(int pointsPerRow) {
@@ -101,7 +124,6 @@ public class test : MonoBehaviour
         }
         return points;
     }
-
     WorleyPoint[] ClusterPoints(WorleyPoint[] points) {
         int pointsPerRow = (int)sqrt(points.Length);
         for (int i = 0; i < points.Length; i++) {
@@ -123,18 +145,97 @@ public class test : MonoBehaviour
                 }
             } 
             points[i].col = points[secondIndex].col;
+            // points[i].pos.x = (points[i].pos.x + points[secondIndex].pos.x) / 2f; // detta kan fucka med positioneringen av celler
+            // points[i].pos.y = (points[i].pos.y + points[secondIndex].pos.y) / 2f;
             points[i].pos.z = points[secondIndex].pos.z;
         }
         return points;
     }
 
+    Texture2D biomes(Color[] heights) {
+
+        Texture2D biomes = new Texture2D(pixWidth, pixHeight);
+        Color[] pix = new Color[biomes.width * biomes.height];
+
+        float y = 0.0F;
+        while (y < biomes.height)
+        {
+            // De zoner då vinden istället går från vänster till höger.
+            // Förenklat, nu byter den bara håll vid ekvatorn.
+            bool switchWindDirection = y < biomes.height / 2f;
+
+            float rain = 1f; // startmängd regn
+
+            float x = 0.0F; // börja från höger
+            if (switchWindDirection) x = biomes.width-1f; // börja från vänster
+            while ((!switchWindDirection && x < biomes.width)||(switchWindDirection && x >= 0f))
+            {                
+                float yCoord = y / biomes.height;
+
+                float altitude = heights[(int)y * biomes.width + (int)x].maxColorComponent;
+                bool aboveWater = altitude == 0f;
+
+                // Temperatur.  
+                float temp = Mathf.Clamp(1f - Mathf.Abs(yCoord - 0.5f), 0f, 1f); // Ju närmre mitten, ju varmare.
+                temp *= Mathf.Clamp(1f - (altitude*altitude), 0f, 1f); // Ju högre höjd, ju kallare
+
+                // Regn
+                float rainFall = 0f;
+                if (aboveWater && rain < 1f) rainFall = -0.1f; // rechargea regn från havet
+                else {
+                    rainFall = altitude; // Ta bort regn med höjd.
+                    rainFall /= 10f; 
+                }
+                rainFall *= (1f+temp); // Ju varmare, ju mer avdunsting
+                rainFall *= 200f / biomes.width; // konstanterna anpassades för 200x200... detta är då för att skala om
+                rain -= rainFall;
+
+                // Färglägg
+                Color rainCol = new Color(1f-rain, 0f,rain); 
+                Color tempCol = new Color(temp, 0f, 1f-temp);
+                
+                // Temperaturzoner
+                if (temp < 0.75f) 
+                    tempCol = new Color(0f,0.75f,1f); // Kallt, blå
+                else if (temp < 0.9f) 
+                    tempCol = new Color(0f, 1f, 0f); // Lagom, grön
+                else 
+                    tempCol = new Color(1f, 0.5f, 0f); // Hett, orange
+                
+                // Blöthetszoner
+                if (rain < 0.2f)
+                    rainCol = new Color(1f,0.9f,0.4f); // Torrt, gul
+                else if (rain < 0.9f) 
+                    rainCol = new Color(0f,1f,0f); // Lagom, grön
+                else
+                    rainCol = new Color(0f,0.5f,0.27f); // Blött, blågrön
+
+                Color biomeCol = (rainCol + tempCol) / 2f; // kombinera så får du biomer, YIPPIE!
+                pix[(int)y * biomes.width + (int)x] = biomeCol;
+                if (aboveWater) pix[(int)y * biomes.width + (int)x] *= 0f; // svart vatten
+
+                if (switchWindDirection) x--; // gå baklänges
+                else x++; // gå framlänges
+            }
+            y++;
+        }
+        biomes.SetPixels(pix);
+        biomes.Apply();
+
+        return biomes;
+    }
+
     // typ baserad på https://youtu.be/4066MndcyCk
     public Texture2D[] Worley(){
 
-        Texture2D noiseTex = new Texture2D(pixWidth, pixHeight);
+        // Height mappen
+        Texture2D heightTex = new Texture2D(pixWidth, pixHeight);
+        Color[] heightPix = new Color[heightTex.width * heightTex.height];
+
+        // Färga pixlarna
         Texture2D cellTex = new Texture2D(pixWidth, pixHeight);
-        Color[] pix = new Color[noiseTex.width * noiseTex.height];
-        Color[] pix2 = new Color[noiseTex.width * noiseTex.height];
+        Color[] cellPix = new Color[cellTex.width * cellTex.height];
+        
         float randomorg = UnityEngine.Random.Range(0, 100);
 
         // Strö ut worley points
@@ -158,17 +259,17 @@ public class test : MonoBehaviour
         
         // Färglägg pixlarna
         float y = 0.0F;
-        while (y < noiseTex.height)
+        while (y < heightTex.height)
         {
             float x = 0.0F;
-            while (x < noiseTex.width)
+            while (x < heightTex.width)
             {
                 float[] distances = new float[points.Length];
                 WorleyPoint[] sortedPoints = points;
                 
                 // Hitta närmsta punkt
-                float xCoord = x / noiseTex.width;
-                float yCoord = y / noiseTex.height;
+                float xCoord = x / heightTex.width;
+                float yCoord = y / heightTex.height;
                 Vector2 curPoint = new Vector2(xCoord, yCoord);
                 int j = 0;
                 foreach(WorleyPoint p in points){
@@ -205,17 +306,16 @@ public class test : MonoBehaviour
                 sample /= tot;
 
                 sample *= sqrt(val); // platta till kontinenter
-                if (sample < 0.35f) sample = 0f; // separera landmassor från havsbotten
+                if (sample < seaLevel) sample = 0f; // separera landmassor från havsbotten
                 sample = pow(sample,2f); // förstärk bergen
 
                 // Denna kommer användas som height map
                 Color pixelCol = new Color(sample,sample,sample); 
-                
-                pix[(int)y * noiseTex.width + (int)x] = pixelCol;
+                heightPix[(int)y * heightTex.width + (int)x] = pixelCol;
 
                 // Färgläggning för meshet WIP
                 Color col2 = sortedPoints[0].col; 
-                pix2[(int)y * noiseTex.width + (int)x] =  col2;
+                cellPix[(int)y * cellTex.width + (int)x] =  col2;
 
                 x++;
             }
@@ -223,12 +323,15 @@ public class test : MonoBehaviour
         }
 
         // Copy the pixel data to the texture and load it into the GPU.
-        noiseTex.SetPixels(pix);
-        noiseTex.Apply();
-        cellTex.SetPixels(pix2);
+        heightTex.SetPixels(heightPix);
+        heightTex.Apply();
+        cellTex.SetPixels(cellPix);
         cellTex.Apply();
 
-        Texture2D[] texs = {noiseTex, cellTex};
+        Texture2D biomeTex = biomes(heightPix);
+
+        // Vi skickar en array med olika texturer från noiset.
+        Texture2D[] texs = {heightTex, cellTex, biomeTex};
         return texs;
         
     }
