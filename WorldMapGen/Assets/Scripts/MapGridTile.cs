@@ -17,8 +17,6 @@ public class MapGridTile : MonoBehaviour
 	private Mesh[] meshes;
     private Vector3[][] tileVertices;
 
-	public Material[] tileMaterial;
-
     
 
     private void Awake () {
@@ -32,7 +30,7 @@ public class MapGridTile : MonoBehaviour
 	// Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        //GenerateMaterial();
+        GenerateMaterial();
     }
 
     // Update is called once per frame
@@ -129,7 +127,6 @@ public class MapGridTile : MonoBehaviour
 			meshes[tile].vertices = tileVertices[tile];
 			meshes[tile].RecalculateNormals();
 		}
-
 	}
 
 	private float[] GenerateRandomHeightMap(){
@@ -138,12 +135,42 @@ public class MapGridTile : MonoBehaviour
 		int counter = 0;
 		for (int i = 0, z = 0; z <= zTileSize * numberOfTiles; z++) {
 			for (int x = 0; x <= xTileSize * numberOfTiles; x++, i++) {
-				//heightMap[i] = UnityEngine.Random.Range(0f, 1f);
+				heightMap[i] = UnityEngine.Random.Range(0f, 1f);
 				//heightMap[i] = 2;
-				heightMap[i] = counter * 0.05f;
+				//heightMap[i] = counter * 0.05f;
 				counter++;
 			}
 		}
 		return heightMap;
+	}
+
+	private void GenerateMaterial(){
+		
+		
+		for (int tile = 0; tile < meshes.Length; tile++) {
+			GameObject currentTile = transform.Find("Tile nr:" + tile).gameObject;
+
+			MeshRenderer meshRend = currentTile.GetComponent<MeshRenderer>();
+			//UnityEngine.Debug.Log(meshR);
+			Texture2D mapTexture = new Texture2D(xTileSize, zTileSize);
+			Color tileColor = new Color(UnityEngine.Random.Range(0f, 1f),UnityEngine.Random.Range(0f, 1f),UnityEngine.Random.Range(0f, 1f));
+			for (int x = 0; x < xTileSize; x++)
+			{
+				for (int z = 0; z < zTileSize; z++)
+				{
+					mapTexture.SetPixel(x,z, tileColor);
+				}
+			}
+			mapTexture.Apply();
+
+			Material tileMaterial = new Material(Shader.Find("Unlit/Texture"));
+
+			tileMaterial.mainTexture = mapTexture;
+
+			tileMaterial.SetTexture("_MainTex", mapTexture);
+
+			meshRend.material = tileMaterial;
+		}
+		
 	}
 }
