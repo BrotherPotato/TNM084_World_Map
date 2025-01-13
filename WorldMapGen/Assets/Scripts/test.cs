@@ -46,15 +46,16 @@ public class test : MonoBehaviour
     public Material mapMat;
 
     Texture2D[] texs;
+    int texIndex = 0;
 
     void Start(){
 
         texs = Worley();
-        //this.GetComponent<MeshRenderer>().material.mainTexture = texs[0];
+        this.GetComponent<MeshRenderer>().material.mainTexture = texs[texIndex];
 
-        mapMat.mainTexture = texs[2];
-        float[] heightMap = readTexture(texs[0]);
-        mesh.ApplyHeight(heightMap);
+        // mapMat.mainTexture = texs[2];
+        // float[] heightMap = readTexture(texs[0]);
+        // mesh.ApplyHeight(heightMap);
 
         //meshes.ApplyHeight(heightMap);
     }
@@ -63,11 +64,15 @@ public class test : MonoBehaviour
 
     public void showHeight() {
         currentTexture = TextureTypes.Map;
-        this.GetComponent<MeshRenderer>().material.mainTexture = texs[0];
+        texIndex--;
+        if (texIndex < 0) texIndex = texs.Length-1;
+        this.GetComponent<MeshRenderer>().material.mainTexture = texs[texIndex];
     }
     public void showCell() {
         currentTexture = TextureTypes.Cellular;
-        this.GetComponent<MeshRenderer>().material.mainTexture = texs[2];
+        texIndex++;
+        if (texIndex >= texs.Length) texIndex = 0;
+        this.GetComponent<MeshRenderer>().material.mainTexture = texs[texIndex];
     }
 
     float[] readTexture(Texture2D tex){
@@ -94,12 +99,7 @@ public class test : MonoBehaviour
     public void UpdateScale(){
         scale = GameObject.Find("Scale Slider").GetComponent<Slider>().value;
         refresh();
-        if(currentTexture == TextureTypes.Map){
-            showHeight();
-        }
-        if(currentTexture == TextureTypes.Cellular){
-            showCell();
-        }
+        this.GetComponent<MeshRenderer>().material.mainTexture = texs[texIndex];
     }
 
     WorleyPoint[] ScatterPoints(int pointsPerRow) {
@@ -152,19 +152,31 @@ public class test : MonoBehaviour
         return points;
     }
 
-    Texture2D biomes(Color[] heights) {
+    Texture2D[] biomes(Color[] heights) {
 
+        // Precipitationaoitnaot
+        Texture2D rainTex = new Texture2D(pixWidth, pixHeight);
+        Color[] rainPix = new Color[rainTex.width * rainTex.height];
+
+        // Temperature
+        Texture2D tempTex = new Texture2D(pixWidth, pixHeight);
+        Color[] tempPix = new Color[tempTex.width * tempTex.height];
+
+        // Biomes
         Texture2D biomes = new Texture2D(pixWidth, pixHeight);
-        Color[] pix = new Color[biomes.width * biomes.height];
+        Color[] biomePix = new Color[biomes.width * biomes.height];
 
         float y = 0.0F;
         while (y < biomes.height)
         {
             // De zoner då vinden istället går från vänster till höger.
-            // Förenklat, nu byter den bara håll vid ekvatorn.
+            // För enkelhetens skull, switchar vid mitten.
             bool switchWindDirection = y < biomes.height / 2f;
 
-            float rain = 1f; // startmängd regn
+            // Ju närmre vindbytet, ju mindre regn.
+            float rain = 2f * Math.Abs(1f - (y / (biomes.height/2f)));
+            rain = sqrt(rain);
+            float startRain = rain;
 
             float x = 0.0F; // börja från höger
             if (switchWindDirection) x = biomes.width-1f; // börja från vänster
@@ -176,13 +188,14 @@ public class test : MonoBehaviour
                 bool aboveWater = altitude == 0f;
 
                 // Temperatur.  
-                float temp = Mathf.Clamp(1f - Mathf.Abs(yCoord - 0.5f), 0f, 1f); // Ju närmre mitten, ju varmare.
+                //float temp = Mathf.Clamp(1f - Mathf.Abs(yCoord - 0.5f), 0f, 1f); // Ju närmre mitten, ju varmare.
+                float temp = yCoord; // Ju närmre botten, ju varmare.
                 temp *= Mathf.Clamp(1f - (altitude*altitude), 0f, 1f); // Ju högre höjd, ju kallare
 
                 // Regn
                 float rainFall = 0f;
-                if (aboveWater && rain < 1f) rainFall = -0.1f; // rechargea regn från havet
-                else {
+                if (aboveWater && rain < startRain) rainFall = -0.1f; // rechargea regn från havet
+                if (!aboveWater && rain > 0f) {
                     rainFall = altitude; // Ta bort regn med höjd.
                     rainFall /= 10f; 
                 }
@@ -193,36 +206,49 @@ public class test : MonoBehaviour
                 // Färglägg
                 Color rainCol = new Color(1f-rain, 0f,rain); 
                 Color tempCol = new Color(temp, 0f, 1f-temp);
+                rainPix[(int)y * biomes.width + (int)x] = rainCol;
+                tempPix[(int)y * biomes.width + (int)x] = tempCol;
                 
                 // Temperaturzoner
-                if (temp < 0.75f) 
-                    tempCol = new Color(0f,0.75f,1f); // Kallt, blå
-                else if (temp < 0.9f) 
-                    tempCol = new Color(0f, 1f, 0f); // Lagom, grön
+                if (temp < 0.33f) 
+                    tempCol = new Color(1f,1f,1f); // Kallt, vitt
+                else if (temp < 0.67f) 
+                    tempCol = new Color(0.7f, 0.85f, 0.2f); // Lagom, gröngul
                 else 
                     tempCol = new Color(1f, 0.5f, 0f); // Hett, orange
                 
                 // Blöthetszoner
-                if (rain < 0.2f)
+                if (rain < 0.33f)
                     rainCol = new Color(1f,0.9f,0.4f); // Torrt, gul
-                else if (rain < 0.9f) 
+                else if (rain < 0.67f) 
                     rainCol = new Color(0f,1f,0f); // Lagom, grön
                 else
                     rainCol = new Color(0f,0.5f,0.27f); // Blött, blågrön
 
                 Color biomeCol = (rainCol + tempCol) / 2f; // kombinera så får du biomer, YIPPIE!
-                pix[(int)y * biomes.width + (int)x] = biomeCol;
-                if (aboveWater) pix[(int)y * biomes.width + (int)x] *= 0f; // svart vatten
+                biomePix[(int)y * biomes.width + (int)x] = biomeCol;
+                if (aboveWater) {
+                    rainPix[(int)y * biomes.width + (int)x] *= 0f; // svart vatten
+                    tempPix[(int)y * biomes.width + (int)x] *= 0f; // svart vatten
+                    biomePix[(int)y * biomes.width + (int)x] = new Color(0,0.5f,1f); // blått vatten
+                }
 
                 if (switchWindDirection) x--; // gå baklänges
                 else x++; // gå framlänges
             }
             y++;
         }
-        biomes.SetPixels(pix);
+        biomes.SetPixels(biomePix);
         biomes.Apply();
 
-        return biomes;
+        rainTex.SetPixels(rainPix);
+        rainTex.Apply();
+
+        tempTex.SetPixels(tempPix);
+        tempTex.Apply();
+
+        Texture2D[] biomeTextures = {rainTex, tempTex, biomes};
+        return biomeTextures;
     }
 
     // typ baserad på https://youtu.be/4066MndcyCk
@@ -250,7 +276,7 @@ public class test : MonoBehaviour
             for (float xf = 0f; xf < 1f; xf += increment) {
                 // Gör kantpunkterna svarta, ser typ ut som hav.
                 if ((xf + (2*increment) >= 1f || xf <= increment) || (yf + (2*increment) >= 1f || yf <= increment)) { 
-                    points[i2].col = new Color(0f, 0f, 0f);
+                    points[i2].col = new Color(0f, 0.5f, 1f);
                     points[i2].pos.z = 0.01f;
                 }
                 i2++;
@@ -314,7 +340,7 @@ public class test : MonoBehaviour
                 heightPix[(int)y * heightTex.width + (int)x] = pixelCol;
 
                 // Färgläggning för meshet WIP
-                Color col2 = sortedPoints[0].col; 
+                Color col2 = sortedPoints[0].col * val; 
                 cellPix[(int)y * cellTex.width + (int)x] =  col2;
 
                 x++;
@@ -328,10 +354,10 @@ public class test : MonoBehaviour
         cellTex.SetPixels(cellPix);
         cellTex.Apply();
 
-        Texture2D biomeTex = biomes(heightPix);
+        Texture2D[] biomeTexs = biomes(heightPix);
 
         // Vi skickar en array med olika texturer från noiset.
-        Texture2D[] texs = {heightTex, cellTex, biomeTex};
+        Texture2D[] texs = {heightTex, cellTex, biomeTexs[0], biomeTexs[1], biomeTexs[2]};
         return texs;
         
     }

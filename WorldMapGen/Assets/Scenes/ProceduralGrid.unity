@@ -518,7 +518,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mouseSens: 3
-  moveSpeed: 4.1
+  moveSpeed: 10
   acceleration: 20
   cameraTransform: {fileID: 30362847}
 --- !u!4 &1169092080
