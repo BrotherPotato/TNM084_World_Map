@@ -584,7 +584,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   xTileSize: 5
   zTileSize: 5
-  numberOfTiles: 3
+  numberOfTiles: 5
   tileScale: 0.5
   tileMaterial: []
 --- !u!1660057539 &9223372036854775807

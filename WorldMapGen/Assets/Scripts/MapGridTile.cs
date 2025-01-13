@@ -3,6 +3,7 @@ using System.Collections;
 using System.Diagnostics;
 using System.Collections.Generic;
 using Unity.VisualScripting;
+using System;
 
 // https://catlikecoding.com/unity/tutorials/procedural-grid/
 // early check transform
@@ -11,7 +12,7 @@ using Unity.VisualScripting;
 public class MapGridTile : MonoBehaviour
 {
     public int xTileSize, zTileSize;
-	public static int numberOfTiles = 3;
+	public int numberOfTiles = 3;
 	public float tileScale = 0.5f;
 	private Mesh[] meshes;
     private Vector3[][] tileVertices;
@@ -25,7 +26,7 @@ public class MapGridTile : MonoBehaviour
 		meshes = new Mesh[numberOfTiles*numberOfTiles];
 		tileVertices = new Vector3[meshes.Length][];
         GenerateTiles();
-		//ApplyHeight(GenerateRandomHeightMap());
+		ApplyHeight(GenerateRandomHeightMap());
     }
 
 	// Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -98,16 +99,51 @@ public class MapGridTile : MonoBehaviour
 
 	private void GenerateTiles(){
 		int tileConter = 0;
-		for (int tileX = 0; tileX < numberOfTiles; tileX++) {
-			for (int tileZ = 0; tileZ < numberOfTiles; tileZ++) {
+		for (int tileZ = 0; tileZ < numberOfTiles; tileZ++) {
+			for (int tileX = 0; tileX < numberOfTiles; tileX++) {
 				GenerateTile(tileConter, xTileSize * tileX * tileScale, zTileSize * tileZ * tileScale);
 				tileConter++;
 			}
 		}
 	}
 
-	public void ApplyHeightTile(float[] heightMap){
+	public void ApplyHeight(float[] heightMap){
+		int sampleSideLength = (int)Mathf.Sqrt(heightMap.Length);
+		int vertPerTileSide = sampleSideLength / numberOfTiles + 1;
+		int tileRow = 0;
+		for (int tile = 0; tile < tileVertices.Length; tile++) { // go through each tile
+			int tileCol = tile % numberOfTiles;
+			if(tile % numberOfTiles == 0 && tile != 0){
+				tileRow++;
+			}
 
-	
+			for (int i = 0, z = 0; z <= zTileSize; z++) {
+				for (int x = 0; x <= xTileSize; x++, i++) {
+					int sampleRow = tileRow * vertPerTileSide + z - tileRow;
+					int sampleCol = tileCol * vertPerTileSide + x - tileCol;
+					int samplePoint = sampleCol * sampleSideLength + sampleRow;
+					tileVertices[tile][i] = meshes[tile].vertices[i] + new Vector3(0, heightMap[samplePoint], 0);
+				}
+			}
+
+			meshes[tile].vertices = tileVertices[tile];
+			meshes[tile].RecalculateNormals();
+		}
+
+	}
+
+	private float[] GenerateRandomHeightMap(){
+		float[] heightMap = new float[(numberOfTiles * xTileSize +1) * (numberOfTiles * zTileSize +1)];
+		UnityEngine.Debug.Log(heightMap.Length);
+		int counter = 0;
+		for (int i = 0, z = 0; z <= zTileSize * numberOfTiles; z++) {
+			for (int x = 0; x <= xTileSize * numberOfTiles; x++, i++) {
+				//heightMap[i] = UnityEngine.Random.Range(0f, 1f);
+				//heightMap[i] = 2;
+				heightMap[i] = counter * 0.05f;
+				counter++;
+			}
+		}
+		return heightMap;
 	}
 }
