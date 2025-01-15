@@ -19,6 +19,7 @@ public class CameraMovement : MonoBehaviour
 
     PlayerInput playerInput;
     InputAction moveAction;
+    InputAction sprintAction;
     InputAction viewAction;
     InputAction flyUpDownAction;
     
@@ -29,6 +30,7 @@ public class CameraMovement : MonoBehaviour
         moveAction = playerInput.actions["move"];
         viewAction = playerInput.actions["look"];
         flyUpDownAction = playerInput.actions["flyUpDown"];
+        sprintAction = playerInput.actions["sprint"];
     }
     
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -53,8 +55,13 @@ public class CameraMovement : MonoBehaviour
         input += referenceTransform.right * moveInput.x;
         input += transform.up * flyUpDownInput;
         input = Vector3.ClampMagnitude(input, 1f);
-        input *= moveSpeed;
 
+        float sprint = sprintAction.ReadValue<float>();
+        if(sprint > 0){
+            input *= moveSpeed * 3f;
+        } else{
+            input *= moveSpeed;
+        }
         return input;
     }
 
