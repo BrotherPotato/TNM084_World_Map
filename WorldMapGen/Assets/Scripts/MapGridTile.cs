@@ -26,7 +26,7 @@ public class MapGridTile : MonoBehaviour
 		meshes = new Mesh[numberOfTiles*numberOfTiles];
 		tileVertices = new Vector3[meshes.Length][];
         GenerateTiles();
-		ApplyHeight(UpscaleHeightMap(GenerateRandomHeightMap()));
+		ApplyHeight(GenerateRandomHeightMap());
     }
 
 	// Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -108,6 +108,14 @@ public class MapGridTile : MonoBehaviour
 	}
 
 	public void ApplyHeight(float[] heightMap){
+		//check size
+		if(heightMap.Length != tileVertices.Length * tileVertices[0].Length - numberOfTiles){ // fixa sen
+			UnityEngine.Debug.Log(heightMap.Length);
+			UnityEngine.Debug.Log(tileVertices.Length * tileVertices[0].Length);
+			heightMap = UpscaleHeightMap(heightMap);
+		}
+		UnityEngine.Debug.Log(heightMap.Length);
+
 		int sampleSideLength = (int)Mathf.Sqrt(heightMap.Length);
 		int vertPerTileSide = sampleSideLength / numberOfTiles + 1;
 		int tileRow = 0;
@@ -147,19 +155,19 @@ public class MapGridTile : MonoBehaviour
 
 	public float[] UpscaleHeightMap(float[] heightMap){
 		int heightMapSideLength = (int)Mathf.Sqrt(heightMap.Length);
-		int upscaleSideLength = numberOfTiles * xTileSize + 1;
+		int upscaleSideLength = numberOfTiles * xTileSize + numberOfTiles - 1; // numberOfTiles * (xTileSize + 1) - numberOfTiles - 1;
 		float scale = heightMapSideLength / (float)upscaleSideLength;
-		UnityEngine.Debug.Log(scale);
+		
 		float[] scaledHeightMap = new float[upscaleSideLength * upscaleSideLength];
-		UnityEngine.Debug.Log(scaledHeightMap.Length);
+		//UnityEngine.Debug.Log(scaledHeightMap.Length);
 		// Bilinear interpolation is used (translated to code from wikipedia)
 		// https://en.wikipedia.org/wiki/Bilinear_interpolation
-		for (int xi = 0; xi < upscaleSideLength; xi++) {
-			for (int zj = 0; zj < upscaleSideLength; zj++)
+		for (int zi = 0; zi < upscaleSideLength; zi++) {
+			for (int xj = 0; xj < upscaleSideLength; xj++)
 			{
 				// Map upscaled coordinates to original matrix coordinates
-                float x = xi * scale;
-                float z = zj * scale;
+                float x = xj * scale;
+                float z = zi * scale;
 
 				
 				int x1 = (int)Math.Floor(x);
@@ -177,7 +185,7 @@ public class MapGridTile : MonoBehaviour
 				w21 * heightMap[x2 * heightMapSideLength + z1] + w22 * heightMap[x2 * heightMapSideLength + z2];
 			
 
-				scaledHeightMap[xi * upscaleSideLength + zj] = value;
+				scaledHeightMap[xj * upscaleSideLength + zi] = value;
 			}
 		}
 		
