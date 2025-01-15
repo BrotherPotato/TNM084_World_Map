@@ -17,10 +17,12 @@ public class MapGrid : MonoBehaviour
 	public Material mapMat;
 
     private Mesh mesh;
+	private Vector3[] origVertices;
 
     private void Awake () {
         //Generate();
         Generate();
+		origVertices = mesh.vertices;
 		//ApplyHeight(GenerateRandomHeightMap());
     }
 
@@ -94,7 +96,7 @@ public class MapGrid : MonoBehaviour
 
 		for (int i = 0, z = 0; z <= zSize; z++) {
 			for (int x = 0; x <= xSize; x++, i++) {
-				vertices[i] = mesh.vertices[i] + new Vector3(0, heightMap[i], 0);
+				vertices[i] = origVertices[i] + new Vector3(0, heightMap[i], 0);
 			}
 		}
 		mesh.vertices = vertices;
