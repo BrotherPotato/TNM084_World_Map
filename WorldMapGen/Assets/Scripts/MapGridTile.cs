@@ -109,9 +109,10 @@ public class MapGridTile : MonoBehaviour
 
 	public void ApplyHeight(float[] heightMap){
 		//check size
+		
 		if(heightMap.Length != tileVertices.Length * tileVertices[0].Length - numberOfTiles){ // fixa sen
 			UnityEngine.Debug.Log(heightMap.Length);
-			UnityEngine.Debug.Log(tileVertices.Length * tileVertices[0].Length);
+			UnityEngine.Debug.Log(tileVertices.Length * tileVertices[0].Length - numberOfTiles);
 			heightMap = UpscaleHeightMap(heightMap);
 		}
 		UnityEngine.Debug.Log(heightMap.Length);
@@ -203,20 +204,17 @@ public class MapGridTile : MonoBehaviour
 
 			MeshRenderer meshRend = currentTile.GetComponent<MeshRenderer>();
 			//UnityEngine.Debug.Log(meshR);
-			Texture2D mapTexture = new Texture2D(xTileSize, zTileSize);
+			Texture2D mapTexture = new Texture2D(xTileSize+1, zTileSize+1);
 			Color tileColor = new Color(UnityEngine.Random.Range(0f, 1f),UnityEngine.Random.Range(0f, 1f),UnityEngine.Random.Range(0f, 1f));
-			for (int x = 0; x < xTileSize; x++)
-			{
-				for (int z = 0; z < zTileSize; z++)
-				{
+			for (int x = 0; x <= xTileSize; x++) {
+				for (int z = 0; z <= zTileSize; z++) {
 					mapTexture.SetPixel(x,z, tileColor);
 				}
 			}
+
 			mapTexture.Apply();
 
 			Material tileMaterial = new Material(Shader.Find("Shader Graphs/MapShader"));
-
-			//tileMaterial.mainTexture = mapTexture;
 
 			tileMaterial.SetTexture("_Texture2D", mapTexture);
 
