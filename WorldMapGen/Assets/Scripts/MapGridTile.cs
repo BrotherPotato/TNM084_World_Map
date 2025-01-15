@@ -26,7 +26,7 @@ public class MapGridTile : MonoBehaviour
 		meshes = new Mesh[numberOfTiles*numberOfTiles];
 		tileVertices = new Vector3[meshes.Length][];
         GenerateTiles();
-		ApplyHeight(GenerateRandomHeightMap());
+		ApplyHeight(UpscaleHeightMap(GenerateRandomHeightMap()));
     }
 
 	// Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -132,18 +132,61 @@ public class MapGridTile : MonoBehaviour
 	}
 
 	private float[] GenerateRandomHeightMap(){
-		float[] heightMap = new float[(numberOfTiles * xTileSize +1) * (numberOfTiles * zTileSize +1)];
-		UnityEngine.Debug.Log(heightMap.Length);
+		//float[] heightMap = new float[(numberOfTiles * xTileSize +1) * (numberOfTiles * zTileSize +1)];
+		float[] heightMap = new float[(numberOfTiles * xTileSize +1) + 50];
+		int sideLength = (int) Mathf.Sqrt(heightMap.Length);
 		int counter = 0;
-		for (int i = 0, z = 0; z <= zTileSize * numberOfTiles; z++) {
-			for (int x = 0; x <= xTileSize * numberOfTiles; x++, i++) {
-				heightMap[i] = UnityEngine.Random.Range(0f, 1f);
-				//heightMap[i] = 2;
-				//heightMap[i] = counter * 0.05f;
+		for (int i = 0, z = 0; z < sideLength; z++) {
+			for (int x = 0; x < sideLength; x++, i++) {
+				heightMap[i] = UnityEngine.Random.Range(0f, 3f);
 				counter++;
 			}
 		}
 		return heightMap;
+	}
+
+	public float[] UpscaleHeightMap(float[] heightMap){
+		int heightMapSideLength = (int)Mathf.Sqrt(heightMap.Length);
+		int upscaleSideLength = numberOfTiles * xTileSize + 1;
+		float scale = heightMapSideLength / (float)upscaleSideLength;
+		UnityEngine.Debug.Log(scale);
+		float[] scaledHeightMap = new float[upscaleSideLength * upscaleSideLength];
+		UnityEngine.Debug.Log(scaledHeightMap.Length);
+		// Bilinear interpolation is used (translated to code from wikipedia)
+		// https://en.wikipedia.org/wiki/Bilinear_interpolation
+		for (int xi = 0; xi < upscaleSideLength; xi++) {
+			for (int zj = 0; zj < upscaleSideLength; zj++)
+			{
+				// Map upscaled coordinates to original matrix coordinates
+                float x = xi * scale;
+                float z = zj * scale;
+
+				
+				int x1 = (int)Math.Floor(x);
+                int z1 = (int)Math.Floor(z);
+                int x2 = Math.Min(x1 + 1, heightMapSideLength - 1);
+                int z2 = Math.Min(z1 + 1, heightMapSideLength - 1);
+				// Compute interpolation weights
+
+				float w11 = (x2-x)*(z2-z) / ((x2-x1)*(z2-z1));
+				float w12 = (x2-x)*(z-z1) / ((x2-x1)*(z2-z1));
+				float w21 = (x-x1)*(z2-z) / ((x2-x1)*(z2-z1));
+				float w22 = (x-x1)*(z-z1) / ((x2-x1)*(z2-z1));
+
+				float value = w11 * heightMap[x1 * heightMapSideLength + z1] + w12 * heightMap[x1 * heightMapSideLength + z2] +
+				w21 * heightMap[x2 * heightMapSideLength + z1] + w22 * heightMap[x2 * heightMapSideLength + z2];
+			
+
+				scaledHeightMap[xi * upscaleSideLength + zj] = value;
+			}
+		}
+		
+		//float[] nonPaddedScaledHeightMap = new float[numberOfTiles * (xTileSize + 1) * numberOfTiles * (xTileSize + 1)];
+		//UnityEngine.Debug.Log(scaledHeightMap.Length);
+		//UnityEngine.Debug.Log(nonPaddedScaledHeightMap.Length);
+		//Array.Copy(scaledHeightMap, 0, nonPaddedScaledHeightMap, 0, numberOfTiles * (xTileSize + 1) * numberOfTiles * (xTileSize + 1));
+
+		return scaledHeightMap;
 	}
 
 	private void GenerateMaterial(){	
