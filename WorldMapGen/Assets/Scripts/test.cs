@@ -91,7 +91,7 @@ public class test : MonoBehaviour
                 float xx = pixHeight * xrat;
                 float zz = pixHeight * zrat;
 
-				heightMap[i] = tex.GetPixel((int)xx,(int)zz).maxColorComponent * 5f; // svårt att välja rätt höjd
+				heightMap[i] = tex.GetPixel((int)zz,(int)xx).maxColorComponent * 5f; // svårt att välja rätt höjd
 			}
 		}
         return heightMap;

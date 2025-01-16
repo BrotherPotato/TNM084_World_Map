@@ -28,7 +28,6 @@ public class MapGridTile : MonoBehaviour
 		tileVertices = new Vector3[meshes.Length][];
 		origVertices = new Vector3[meshes.Length][];
         GenerateTiles();
-		
 		for (int tile = 0; tile < origVertices.Length; tile++) { // go through each tile
 			origVertices[tile] = meshes[tile].vertices;
 		}
@@ -38,7 +37,7 @@ public class MapGridTile : MonoBehaviour
 	// Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        GenerateMaterial();
+        //GenerateMaterial();
     }
 
     // Update is called once per frame
@@ -60,7 +59,7 @@ public class MapGridTile : MonoBehaviour
 		}	
 	}
 
-	private void GenerateTile (int tileIndex, float xStartPos, float zStartPos) {
+	private void GenerateTile (int tileIndex, float xStartPos, float zStartPos, float uvXstart, float uvZstart) {
 		// create empty object
 		GameObject newTile = new GameObject("Tile nr:" + tileIndex);
 		// add components
@@ -78,10 +77,13 @@ public class MapGridTile : MonoBehaviour
         Vector4[] tangents = new Vector4[tileVertices[tileIndex].Length];
 		Vector4 tangent = new Vector4(0f, 1f, 0f, -1f);
 
+		
+
 		for (int i = 0, z = 0; z <= zTileSize; z++) {
 			for (int x = 0; x <= xTileSize; x++, i++) {
 				tileVertices[tileIndex][i] = new Vector3(xStartPos + x * tileScale, 0, zStartPos + z * tileScale);
-                uv[i] = new Vector2((float)x / tileScale, (float)z / tileScale);
+                Vector2 uv01 = new Vector2((float)x / tileSize, (float)z / tileSize);
+				uv[i] = new Vector2(uvXstart + uv01.x / numberOfTiles, uvZstart + uv01.y / numberOfTiles);
                 tangents[i] = tangent;
 			}
 		}
@@ -107,7 +109,22 @@ public class MapGridTile : MonoBehaviour
 		int tileConter = 0;
 		for (int tileZ = 0; tileZ < numberOfTiles; tileZ++) {
 			for (int tileX = 0; tileX < numberOfTiles; tileX++) {
-				GenerateTile(tileConter, xTileSize * tileX * tileScale, zTileSize * tileZ * tileScale);
+				float uvZstart = 0;
+				float uvXstart = 0;
+				if(tileZ != 0){
+					uvZstart = tileZ / (float)numberOfTiles;
+				}
+				if(tileX != 0){
+					uvXstart = tileX / (float)numberOfTiles;
+				}
+				float xHalf = ((xTileSize + 1) * numberOfTiles * tileScale) / 2;
+				float zHalf = ((zTileSize + 1) * numberOfTiles * tileScale) / 2;
+
+
+				float xStart = xTileSize * tileX * tileScale - xHalf;
+				float zStart = zTileSize * tileZ * tileScale - zHalf;
+				
+				GenerateTile(tileConter, xStart, zStart, uvXstart, uvZstart);
 				tileConter++;
 			}
 		}
@@ -115,13 +132,9 @@ public class MapGridTile : MonoBehaviour
 
 	public void ApplyHeight(float[] heightMap){
 		//check size
-		
 		if(heightMap.Length != tileVertices.Length * tileVertices[0].Length - numberOfTiles){ // fixa sen
-			UnityEngine.Debug.Log(heightMap.Length);
-			UnityEngine.Debug.Log(tileVertices.Length * tileVertices[0].Length - numberOfTiles);
 			heightMap = UpscaleHeightMap(heightMap);
 		}
-		UnityEngine.Debug.Log(heightMap.Length);
 
 		int sampleSideLength = (int)Mathf.Sqrt(heightMap.Length);
 		int vertPerTileSide = sampleSideLength / numberOfTiles + 1;
@@ -228,41 +241,36 @@ public class MapGridTile : MonoBehaviour
 		}
 	}
 
+	// https://stackoverflow.com/questions/56949217/how-to-resize-a-texture2d-using-height-and-width
+	private Texture2D Resize(Texture2D texture2D,int targetX,int targetY)
+    {
+        RenderTexture rt=new RenderTexture(targetX, targetY,24);
+        RenderTexture.active = rt;
+        Graphics.Blit(texture2D,rt);
+        Texture2D result=new Texture2D(targetX,targetY);
+        result.ReadPixels(new Rect(0,0,targetX,targetY),0,0);
+        result.Apply();
+        return result;
+    }
+
 	public void LoadMaterial(Texture2D mapTexture){
-		int mapTextureMipLevel = 0;
-		Color[] pixelColor = mapTexture.GetPixels(mapTextureMipLevel);
+		Vector2Int wantedSize = new Vector2Int(xTileSize+1, zTileSize+1);
+		wantedSize *= 150;
+		Texture2D temp = Resize(mapTexture, wantedSize.x, wantedSize.y);
 
-		int sampleSideLength = (int)Mathf.Sqrt(pixelColor.Length);
-		int vertPerTileSide = sampleSideLength / numberOfTiles + 1;
-		int tileRow = 0;
-		for (int tile = 0; tile < tileVertices.Length; tile++) { // go through each tile
+		for (int tile = 0; tile < tileVertices.Length; tile++)
+		{
 			GameObject currentTile = transform.Find("Tile nr:" + tile).gameObject;
+		 	MeshRenderer meshRend = currentTile.GetComponent<MeshRenderer>();
 
-			MeshRenderer meshRend = currentTile.GetComponent<MeshRenderer>();
+			temp.Apply();
 
+		 	Material tileMaterial = new Material(Shader.Find("Shader Graphs/MapShader"));
 
-			int tileCol = tile % numberOfTiles;
-			if(tile % numberOfTiles == 0 && tile != 0){
-				tileRow++;
-			}
+		 	tileMaterial.SetTexture("_Texture2D", temp);
 
-			for (int i = 0, z = 0; z <= zTileSize; z++) {
-				for (int x = 0; x <= xTileSize; x++, i++) {
-					int sampleRow = tileRow * vertPerTileSide + z - tileRow;
-					int sampleCol = tileCol * vertPerTileSide + x - tileCol;
-					int samplePoint = sampleCol * sampleSideLength + sampleRow;
-					mapTexture.SetPixel(x,z, pixelColor[samplePoint]);
-				}
-			}
-
-			mapTexture.Apply();
-
-			Material tileMaterial = new Material(Shader.Find("Shader Graphs/MapShader"));
-
-			tileMaterial.SetTexture("_Texture2D", mapTexture);
-
-			meshRend.material = tileMaterial;
+		 	meshRend.material = tileMaterial;
 		}
-
 	}
+
 }
