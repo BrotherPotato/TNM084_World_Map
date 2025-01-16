@@ -86,20 +86,8 @@ public class test : MonoBehaviour
         // int meshWidth = meshes.tileSize; // för tiles, funkar inte just nu
 
         float[] heightMap = new float[pixels.Length];
-        // for (int i = 0, z = 0; z <= meshWidth; z++) {
-		// 	for (int x = 0; x <= meshWidth; x++, i++) {
-
-        //         float xrat = (float)x / (float)meshWidth;
-        //         float zrat = (float)z / (float)meshWidth;
-        //         float xx = pixHeight * xrat;
-        //         float zz = pixHeight * zrat;
-
-		// 		heightMap[i] = tex.GetPixel((int)zz,(int)xx).maxColorComponent * 15f; // svårt att välja rätt höjd
-		// 	}
-		// }
-
         for (int i = 0; i < pixels.Length; i++) {
-            heightMap[i] = pixels[i].maxColorComponent * 15f;
+            heightMap[i] = pixels[i].maxColorComponent * 5f;
         }
 
         return heightMap;
@@ -226,14 +214,14 @@ public class test : MonoBehaviour
                 if (hRight > hMid) r2 += rT.GetPixel(x-1,y).maxColorComponent;
                 if (hLeft > hMid)  r2 += rT.GetPixel(x+1,y).maxColorComponent;
 
-                // Derivator
+                // Derivata till grannpixlar
                 float d1 = (hAbove - hMid);
                 float d2 = (hBelow - hMid);
                 float d3 = (hRight - hMid);
                 float d4 = (hLeft  - hMid);
 
                 // Jag kan inte förklara detta, om jag än så ville.
-                float r = Mathf.Min(d1, Mathf.Min(d2, Mathf.Min(d3, d4)));
+                float r = Mathf.Min(d1, Mathf.Min(d2, Mathf.Min(d3, Mathf.Min(d4, 0f))));
                 r = 1f - (Math.Abs(r)*10f);
                 r = ((rMid-r2) * 100f) + r;
                 r /= 2f;
