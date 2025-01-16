@@ -220,6 +220,43 @@ public class MapGridTile : MonoBehaviour
 
 			meshRend.material = tileMaterial;
 		}
-		
+	}
+
+	public void LoadMaterial(Texture2D mapTexture){
+		int mapTextureMipLevel = 0;
+		Color[] pixelColor = mapTexture.GetPixels(mapTextureMipLevel);
+
+		int sampleSideLength = (int)Mathf.Sqrt(pixelColor.Length);
+		int vertPerTileSide = sampleSideLength / numberOfTiles + 1;
+		int tileRow = 0;
+		for (int tile = 0; tile < tileVertices.Length; tile++) { // go through each tile
+			GameObject currentTile = transform.Find("Tile nr:" + tile).gameObject;
+
+			MeshRenderer meshRend = currentTile.GetComponent<MeshRenderer>();
+
+
+			int tileCol = tile % numberOfTiles;
+			if(tile % numberOfTiles == 0 && tile != 0){
+				tileRow++;
+			}
+
+			for (int i = 0, z = 0; z <= zTileSize; z++) {
+				for (int x = 0; x <= xTileSize; x++, i++) {
+					int sampleRow = tileRow * vertPerTileSide + z - tileRow;
+					int sampleCol = tileCol * vertPerTileSide + x - tileCol;
+					int samplePoint = sampleCol * sampleSideLength + sampleRow;
+					mapTexture.SetPixel(x,z, pixelColor[samplePoint]);
+				}
+			}
+
+			mapTexture.Apply();
+
+			Material tileMaterial = new Material(Shader.Find("Shader Graphs/MapShader"));
+
+			tileMaterial.SetTexture("_Texture2D", mapTexture);
+
+			meshRend.material = tileMaterial;
+		}
+
 	}
 }
