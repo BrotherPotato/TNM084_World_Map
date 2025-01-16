@@ -259,7 +259,7 @@ public class MapGridTile : MonoBehaviour
 
 		for (int tile = 0; tile < tileVertices.Length; tile++)
 		{
-			GameObject currentTile = transform.Find("Tile nr:" + tile).gameObject;
+			GameObject currentTile = GameObject.Find("Tile nr:" + tile);
 		 	MeshRenderer meshRend = currentTile.GetComponent<MeshRenderer>();
 
 			temp.Apply();
