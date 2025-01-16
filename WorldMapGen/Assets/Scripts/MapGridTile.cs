@@ -17,6 +17,7 @@ public class MapGridTile : MonoBehaviour
 	public float tileScale = 0.5f;
 	private Mesh[] meshes;
     private Vector3[][] tileVertices;
+	private Vector3[][] origVertices;
 
     
 
@@ -25,8 +26,13 @@ public class MapGridTile : MonoBehaviour
 		xTileSize = zTileSize = tileSize;
 		meshes = new Mesh[numberOfTiles*numberOfTiles];
 		tileVertices = new Vector3[meshes.Length][];
+		origVertices = new Vector3[meshes.Length][];
         GenerateTiles();
-		ApplyHeight(GenerateRandomHeightMap());
+		
+		for (int tile = 0; tile < origVertices.Length; tile++) { // go through each tile
+			origVertices[tile] = meshes[tile].vertices;
+		}
+		//ApplyHeight(GenerateRandomHeightMap());
     }
 
 	// Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -131,7 +137,7 @@ public class MapGridTile : MonoBehaviour
 					int sampleRow = tileRow * vertPerTileSide + z - tileRow;
 					int sampleCol = tileCol * vertPerTileSide + x - tileCol;
 					int samplePoint = sampleCol * sampleSideLength + sampleRow;
-					tileVertices[tile][i] = meshes[tile].vertices[i] + new Vector3(0, heightMap[samplePoint], 0);
+					tileVertices[tile][i] = origVertices[tile][i] + new Vector3(0, heightMap[samplePoint], 0);
 				}
 			}
 

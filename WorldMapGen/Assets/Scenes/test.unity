@@ -667,7 +667,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0.997, y: 3.994, z: 0.276}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -581, y: -166}
+  m_AnchoredPosition: {x: -700, y: -166}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &701565388
@@ -877,8 +877,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 564, y: -242}
-  m_SizeDelta: {x: 160, y: 20}
+  m_AnchoredPosition: {x: 700, y: -242}
+  m_SizeDelta: {x: 301.45, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1235917410
 MonoBehaviour:
@@ -993,7 +993,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.25}
   m_AnchorMax: {x: 1, y: 0.75}
-  m_AnchoredPosition: {x: -5, y: 0}
+  m_AnchoredPosition: {x: -4.9999847, y: 0}
   m_SizeDelta: {x: -20, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1461761631
@@ -1469,15 +1469,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0a4433040c3d8e4aa7620380edf0a92, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  noiseSc: {fileID: 0}
-  pixWidth: 200
-  pixHeight: 200
+  pixWidth: 800
+  pixHeight: 800
   water: {r: 0, g: 0.46294403, b: 1, a: 1}
   sand: {r: 1, g: 0.87936467, b: 0.25, a: 1}
   grass: {r: 0, g: 1, b: 0, a: 1}
   forest: {r: 0, g: 0.509434, b: 0, a: 1}
   mountains: {r: 0.9528302, g: 0.92859524, b: 0.9033909, a: 1}
   seaLevel: 0.35
+  plane: {fileID: 1959519947}
   mesh: {fileID: 0}
   meshes: {fileID: 0}
   mapMat: {fileID: 2100000, guid: 8b7d145b7468cda4fa9df73cb40f3db1, type: 2}
@@ -1691,7 +1691,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0.997, y: 3.994, z: 0.276}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -581, y: -248}
+  m_AnchoredPosition: {x: -700, y: -248}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2088982873

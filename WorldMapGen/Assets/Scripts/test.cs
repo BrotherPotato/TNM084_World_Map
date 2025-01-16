@@ -22,9 +22,6 @@ public class WorleyPoint{
 public class test : MonoBehaviour
 {
     
-    [SerializeField]
-    NoiseScript noiseSc;
-    //public GameObject plane;
     public int pixWidth = 800;
     public int pixHeight = 800;
     float scale = 5f;
@@ -55,11 +52,12 @@ public class test : MonoBehaviour
         texs = Worley();
         plane.material.mainTexture = texs[texIndex];
 
-        mapMat.mainTexture = texs[8];
+        mapMat.mainTexture = texs[6];
         float[] heightMap = readTexture(texs[0]);
-        mesh.ApplyHeight(heightMap);
+        //mesh.ApplyHeight(heightMap);
 
-        //meshes.ApplyHeight(heightMap);
+        meshes.ApplyHeight(heightMap);
+        meshes.LoadMaterial(texs[6]);
     }
 
     public void refresh() {texs = Worley();}
@@ -81,8 +79,8 @@ public class test : MonoBehaviour
 
     float[] readTexture(Texture2D tex){
 
-        int meshWidth = mesh.xSize; // för single grid
-        //int meshWidth = meshes.tileSize; // för tiles, funkar inte just nu
+        //int meshWidth = mesh.xSize; // för single grid
+        int meshWidth = meshes.tileSize; // för tiles, funkar inte just nu
 
         float[] heightMap = new float[(meshWidth + 1) * (meshWidth + 1)];
         for (int i = 0, z = 0; z <= meshWidth; z++) {
@@ -93,7 +91,7 @@ public class test : MonoBehaviour
                 float xx = pixHeight * xrat;
                 float zz = pixHeight * zrat;
 
-				heightMap[i] = tex.GetPixel((int)xx,(int)zz).maxColorComponent * 10f; // svårt att välja rätt höjd
+				heightMap[i] = tex.GetPixel((int)xx,(int)zz).maxColorComponent * 5f; // svårt att välja rätt höjd
 			}
 		}
         return heightMap;
@@ -104,9 +102,11 @@ public class test : MonoBehaviour
         scale = GameObject.Find("Scale Slider").GetComponent<Slider>().value;
         refresh();
         plane.material.mainTexture = texs[texIndex];
-        mapMat.mainTexture = texs[8];
+        mapMat.mainTexture = texs[6];
         float[] heightMap = readTexture(texs[0]);
-        mesh.ApplyHeight(heightMap);
+        //mesh.ApplyHeight(heightMap);
+        meshes.ApplyHeight(heightMap);
+        meshes.LoadMaterial(texs[6]);
     }
 
     WorleyPoint[] ScatterPoints(int pointsPerRow) {
@@ -176,13 +176,13 @@ public class test : MonoBehaviour
     }
 
     Texture2D rivers2(Texture2D hT, Texture2D rT) {
-        Texture2D riversTex = new Texture2D(pixWidth, pixHeight);
-        Color[] riversPix = new Color[riversTex.width * riversTex.height];
+        Texture2D rTex = new Texture2D(pixWidth, pixHeight);
+        Color[] rPix = new Color[rTex.width * rTex.height];
 
         for (int x = 0; x < pixWidth;x++) {
             for (int y = 0; y < pixHeight; y++) {
 
-                float rMid = rT.GetPixel(x,y).maxColorComponent;
+                float rMid = rT.GetPixel(x,y).b;
                 float hMid = hT.GetPixel(x,y).maxColorComponent;
 
                 float hAbove = hMid; // y-1
@@ -203,65 +203,29 @@ public class test : MonoBehaviour
                 if (hRight > hMid) r2 += rT.GetPixel(x-1,y).maxColorComponent;
                 if (hLeft > hMid)  r2 += rT.GetPixel(x+1,y).maxColorComponent;
 
-                float r = (rMid - r2) * 100f;
-                if (r < 0.5f) r = 0f;
+                // Derivator
+                float d1 = (hAbove - hMid);
+                float d2 = (hBelow - hMid);
+                float d3 = (hRight - hMid);
+                float d4 = (hLeft  - hMid);
+
+                // Jag kan inte förklara detta, om jag än så ville.
+                float r = Mathf.Min(d1, Mathf.Min(d2, Mathf.Min(d3, d4)));
+                r = 1f - (Math.Abs(r)*10f);
+                r = ((rMid-r2) * 100f) + r;
+                r /= 2f;
+                if (r < 0.1f) r = 0f;
                 else r = 1f;
 
                 Color res = new Color(r,r,r);
-                riversPix[y * pixHeight + x] = res;
+                rPix[y * pixHeight + x] = res;
             }
         }
 
+        rTex.SetPixels(rPix);
+        rTex.Apply();
 
-
-        riversTex.SetPixels(riversPix);
-        riversTex.Apply();
-
-        return riversTex;
-    }
-
-    Texture2D rivers(Color[] heights, Color[] rain) {
-
-        Texture2D riversTex = new Texture2D(pixWidth, pixHeight);
-        Color[] riversPix = new Color[riversTex.width * riversTex.height];
-        float randomorg = UnityEngine.Random.Range(0, 100);
-
-        // Finns absolut ett bättre sätt, jag vet bara inte hur.
-
-        float y = 0.0F;
-        while (y < riversTex.height)
-        {
-            float x = 0.0F;
-            while (x < riversTex.width)
-            {
-
-                float h = Mathf.Clamp(1f - heights[(int)y * riversTex.width + (int)x].maxColorComponent, 0f, 1f);
-                h = pow(h,2f); // mellan 0-1f, men slantad mot 0f
-                float r = rain[(int)y * riversTex.width + (int)x].maxColorComponent;
-                float hr = sqrt(h * r); // mellan 0-1f, men slantad mot 1f
-
-                float xCoord = x / riversTex.width;
-                float yCoord = y / riversTex.height;
-                
-                float2 currentPoint = float2((xCoord + randomorg) * 100 * hr, (yCoord + randomorg) * 100 * hr);
-
-                hr = noise.cnoise(currentPoint); // ser varken ut som sjöar eller floder, men jaja
-
-                if (hr > 0.33f) hr = 1f;
-                else hr = 0f;
-                
-                Color col = new Color(1f,1f,1f) * hr;
-                riversPix[(int)y * riversTex.width + (int)x] = col;
-
-                x++;
-            }
-            y++;
-        }
-
-        riversTex.SetPixels(riversPix);
-        riversTex.Apply();
-
-        return riversTex;
+        return rTex;
     }
 
     Texture2D[] biomes(Texture2D h) {
@@ -318,8 +282,8 @@ public class test : MonoBehaviour
                 rain -= rainFall;
 
                 // Färglägg
-                Color rainCol = new Color(0f, 0f,rain); 
-                Color tempCol = new Color(temp, 0f, 1f-temp);
+                Color rainCol = new Color(1f-rain, 1f-rain,rain); 
+                Color tempCol = new Color(temp, 1f-temp, 1f-temp);
                 rainPix[(int)y * biomes.width + (int)x] = rainCol;
                 tempPix[(int)y * biomes.width + (int)x] = tempCol;
                 
@@ -360,13 +324,10 @@ public class test : MonoBehaviour
         tempTex.SetPixels(tempPix);
         tempTex.Apply();
 
-        Texture2D riversTex = rivers(heights, rainPix);
-        Texture2D riversTex2 = rivers2(h, rainTex);
+        Texture2D riversTex = rivers2(h, rainTex);
 
-        Texture2D biomes3 = new Texture2D(pixWidth, pixHeight);
-
-        biomes3.SetPixels(biomePix);
-        biomes3.Apply();
+        biomes.SetPixels(biomePix);
+        biomes.Apply();
 
         Texture2D biomes2 = new Texture2D(pixWidth, pixHeight);
         Color[] biomePix2 = biomePix;
@@ -375,25 +336,13 @@ public class test : MonoBehaviour
         for (int i = 0; i < biomePix.Length; i++) {
             int xi = i % (int)sqrt(biomePix.Length);
             int yi = (i - xi) / (int)sqrt(biomePix.Length);
-            if (riversTex.GetPixel(xi,yi).maxColorComponent != 0f) biomePix[i] = riversTex.GetPixel(xi,yi) * water;
+            if (riversTex.GetPixel(xi,yi).maxColorComponent != 0f) biomePix2[i] = riversTex.GetPixel(xi,yi) * water;
         }
-
-        biomes.SetPixels(biomePix);
-        biomes.Apply();
-
-        // Lägg på floderna på biomerna.
-        for (int i = 0; i < biomePix.Length; i++) {
-            int xi = i % (int)sqrt(biomePix.Length);
-            int yi = (i - xi) / (int)sqrt(biomePix.Length);
-            if (riversTex2.GetPixel(xi,yi).maxColorComponent != 0f) biomePix2[i] = riversTex2.GetPixel(xi,yi) * water;
-        }
-
-        
 
         biomes2.SetPixels(biomePix2);
         biomes2.Apply();
 
-        Texture2D[] biomeTextures = {rainTex, tempTex, riversTex, riversTex2, biomes, biomes2, biomes3};
+        Texture2D[] biomeTextures = {rainTex, tempTex, riversTex, biomes, biomes2};
         return biomeTextures;
     }
 
@@ -514,7 +463,7 @@ public class test : MonoBehaviour
         Texture2D[] biomeTexs = biomes(heightTex);
 
         // Vi skickar en array med olika texturer från noiset.
-        Texture2D[] texs = {heightTex, cellTex, biomeTexs[0], biomeTexs[1], biomeTexs[2], biomeTexs[3], biomeTexs[4], biomeTexs[5], biomeTexs[6]};
+        Texture2D[] texs = {heightTex, cellTex, biomeTexs[0], biomeTexs[1], biomeTexs[2], biomeTexs[3], biomeTexs[4]};
         return texs;
         
     }
