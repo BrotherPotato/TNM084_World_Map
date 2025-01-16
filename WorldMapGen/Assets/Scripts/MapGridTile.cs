@@ -8,7 +8,6 @@ using System;
 // https://catlikecoding.com/unity/tutorials/procedural-grid/
 // early check transform
 
-[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class MapGridTile : MonoBehaviour
 {
     public int tileSize;
@@ -149,7 +148,7 @@ public class MapGridTile : MonoBehaviour
 				for (int x = 0; x <= xTileSize; x++, i++) {
 					int sampleRow = tileRow * vertPerTileSide + z - tileRow;
 					int sampleCol = tileCol * vertPerTileSide + x - tileCol;
-					int samplePoint = sampleCol * sampleSideLength + sampleRow;
+					int samplePoint = sampleCol + sampleRow * sampleSideLength;
 					tileVertices[tile][i] = origVertices[tile][i] + new Vector3(0, heightMap[samplePoint], 0);
 				}
 			}

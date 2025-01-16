@@ -23,21 +23,10 @@ public class test : MonoBehaviour
 {
     
     public int pixWidth = 800;
-    public int pixHeight = 800;
+    private int pixHeight = 800;
     float scale = 5f;
-    public Color water = new Color(0.0f, 0.0f, 1.0f, 1.0f);
-    public Color sand = new Color(0.9f, 0.8f, 0.5f, 1.0f);
-    public Color grass = new Color(0.1f, 1.0f, 0.1f, 1.0f);
-    public Color forest = new Color(0.4f, 1.0f, 0.4f, 1.0f);
-    public Color mountains = new Color(1.0f, 1.0f, 1.0f, 1.0f);
-
+    private Color water = new Color(0.0f, 0.0f, 1.0f, 1.0f);
     public float seaLevel = 0.35f;
-
-    enum TextureTypes {Map, Cellular}
-    private TextureTypes currentTexture = TextureTypes.Map;
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-
     public MeshRenderer plane;
 
     [SerializeField] MapGrid mesh;
@@ -48,22 +37,37 @@ public class test : MonoBehaviour
     int texIndex = 0;
 
     void Start(){
+        pixHeight = pixWidth; // kvadratisk
 
+        refresh();
+    }
+
+    public void refresh() {
         texs = Worley();
         plane.material.mainTexture = texs[texIndex];
-
         mapMat.mainTexture = texs[6];
-        float[] heightMap = readTexture(texs[0]);
-        //mesh.ApplyHeight(heightMap);
-
+        float[] heightMap = readTexture(texs[0].GetPixels());
         meshes.ApplyHeight(heightMap);
         meshes.LoadMaterial(texs[6]);
     }
 
-    public void refresh() {texs = Worley();}
-
     public void showMap() {
         plane.enabled = !plane.enabled;
+    }
+
+    public void Update() {
+        if (Input.GetKeyDown("space")) {
+            Debug.Log("space key was pressed");
+            showMap();
+        }
+        if (Input.GetKeyDown(KeyCode.R)  && plane.enabled) {
+            Debug.Log("r key was pressed");
+            showHeight();
+        }
+        if (Input.GetKeyDown(KeyCode.F)  && plane.enabled) {
+            Debug.Log("f key was pressed");
+            showCell();
+        }
     }
 
     public void showHeight() {
@@ -77,23 +81,27 @@ public class test : MonoBehaviour
         plane.material.mainTexture = texs[texIndex];
     }
 
-    float[] readTexture(Texture2D tex){
+    float[] readTexture(Color[] pixels){
 
-        //int meshWidth = mesh.xSize; // för single grid
-        int meshWidth = meshes.tileSize; // för tiles, funkar inte just nu
+        // int meshWidth = meshes.tileSize; // för tiles, funkar inte just nu
 
-        float[] heightMap = new float[(meshWidth + 1) * (meshWidth + 1)];
-        for (int i = 0, z = 0; z <= meshWidth; z++) {
-			for (int x = 0; x <= meshWidth; x++, i++) {
+        float[] heightMap = new float[pixels.Length];
+        // for (int i = 0, z = 0; z <= meshWidth; z++) {
+		// 	for (int x = 0; x <= meshWidth; x++, i++) {
 
-                float xrat = (float)x / (float)meshWidth;
-                float zrat = (float)z / (float)meshWidth;
-                float xx = pixHeight * xrat;
-                float zz = pixHeight * zrat;
+        //         float xrat = (float)x / (float)meshWidth;
+        //         float zrat = (float)z / (float)meshWidth;
+        //         float xx = pixHeight * xrat;
+        //         float zz = pixHeight * zrat;
 
-				heightMap[i] = tex.GetPixel((int)zz,(int)xx).maxColorComponent * 5f; // svårt att välja rätt höjd
-			}
-		}
+		// 		heightMap[i] = tex.GetPixel((int)zz,(int)xx).maxColorComponent * 15f; // svårt att välja rätt höjd
+		// 	}
+		// }
+
+        for (int i = 0; i < pixels.Length; i++) {
+            heightMap[i] = pixels[i].maxColorComponent * 15f;
+        }
+
         return heightMap;
     }
 
@@ -101,12 +109,6 @@ public class test : MonoBehaviour
     public void UpdateScale(){
         scale = GameObject.Find("Scale Slider").GetComponent<Slider>().value;
         refresh();
-        plane.material.mainTexture = texs[texIndex];
-        mapMat.mainTexture = texs[6];
-        float[] heightMap = readTexture(texs[0]);
-        //mesh.ApplyHeight(heightMap);
-        meshes.ApplyHeight(heightMap);
-        meshes.LoadMaterial(texs[6]);
     }
 
     WorleyPoint[] ScatterPoints(int pointsPerRow) {
@@ -152,21 +154,42 @@ public class test : MonoBehaviour
                 }
             } 
             points[i].col = points[secondIndex].col;
-            // points[i].pos.x = (points[i].pos.x + points[secondIndex].pos.x) / 2f; // detta kan fucka med positioneringen av celler
-            // points[i].pos.y = (points[i].pos.y + points[secondIndex].pos.y) / 2f;
+            points[i].pos.x = (points[i].pos.x + points[secondIndex].pos.x) / 2f; // detta kan fucka med positioneringen av celler
+            points[i].pos.y = (points[i].pos.y + points[secondIndex].pos.y) / 2f;
             points[i].pos.z = points[secondIndex].pos.z;
         }
         return points;
     }
 
-    Texture2D people() {
+    Texture2D people(Texture2D tT, Texture2D rT) {
 
         Texture2D popTex = new Texture2D(pixWidth, pixHeight);
         Color[] popPix = new Color[popTex.width * popTex.height];
 
-        // ingen aning
-        // ta typ biomerna och ge dem varsin chans att spawna en människa
-        // ju skönare klimat, ju fler människor.
+        for (int x = 0; x < pixWidth;x++) {
+            for (int y = 0; y < pixHeight; y++) {
+
+                float r = 0f;
+
+                float tMid = tT.GetPixel(x,y).r;
+                float freshWater = 0f;
+
+                // Omgivning
+                if (y-1 >= 0)           freshWater += rT.GetPixel(x,y-1).maxColorComponent;
+                if (y+1 < pixHeight)    freshWater += rT.GetPixel(x,y+1).maxColorComponent;
+                if (x-1 >= 0)           freshWater += rT.GetPixel(x-1,y).maxColorComponent;
+                if (x+1 < pixWidth)     freshWater += rT.GetPixel(x+1,y).maxColorComponent;
+                freshWater /= 2f;
+
+                // Inga människor i vattnet
+                if (rT.GetPixel(x,y).maxColorComponent == 1f) freshWater = 0f;;
+
+                r = tMid * freshWater;
+
+                Color res = new Color(r,0f,0f);
+                popPix[y * pixHeight + x] = res;
+            }
+        }
 
         popTex.SetPixels(popPix);
         popTex.Apply();
@@ -175,7 +198,7 @@ public class test : MonoBehaviour
 
     }
 
-    Texture2D rivers2(Texture2D hT, Texture2D rT) {
+    Texture2D rivers(Texture2D hT, Texture2D rT) {
         Texture2D rTex = new Texture2D(pixWidth, pixHeight);
         Color[] rPix = new Color[rTex.width * rTex.height];
 
@@ -214,7 +237,7 @@ public class test : MonoBehaviour
                 r = 1f - (Math.Abs(r)*10f);
                 r = ((rMid-r2) * 100f) + r;
                 r /= 2f;
-                if (r < 0.1f) r = 0f;
+                if (r < 0.1f || hMid == 0f) r = 0f;
                 else r = 1f;
 
                 Color res = new Color(r,r,r);
@@ -266,7 +289,6 @@ public class test : MonoBehaviour
                 bool aboveWater = altitude == 0f;
 
                 // Temperatur.  
-                //float temp = Mathf.Clamp(1f - Mathf.Abs(yCoord - 0.5f), 0f, 1f); // Ju närmre mitten, ju varmare.
                 float temp = yCoord; // Ju närmre botten, ju varmare.
                 temp *= Mathf.Clamp(1f - (altitude*altitude), 0f, 1f); // Ju högre höjd, ju kallare
 
@@ -324,7 +346,7 @@ public class test : MonoBehaviour
         tempTex.SetPixels(tempPix);
         tempTex.Apply();
 
-        Texture2D riversTex = rivers2(h, rainTex);
+        Texture2D riversTex = rivers(h, rainTex);
 
         biomes.SetPixels(biomePix);
         biomes.Apply();
@@ -430,7 +452,7 @@ public class test : MonoBehaviour
 
                 sample *= (val); // platta till kontinenter
                 if (sample < seaLevel) sample = seaLevel; // separera landmassor från havsbotten
-                //sample = pow(sample,2f); // förstärk bergen
+                
 
                 if(sample>maxHeight) maxHeight = sample;
                 if (sample<minHeight) minHeight = sample;
@@ -448,6 +470,7 @@ public class test : MonoBehaviour
             y++;
         }
 
+        // Normalisera höjder
         for (int i = 0; i < heightPix.Length; i++) {
             float s = heightPix[i].maxColorComponent;
             s = (s - minHeight) / (maxHeight - minHeight);
@@ -461,9 +484,22 @@ public class test : MonoBehaviour
         cellTex.Apply();
 
         Texture2D[] biomeTexs = biomes(heightTex);
+        Texture2D pop = people(biomeTexs[1], biomeTexs[2]);
+
+
+        // Lägg på folk på kartan
+        Texture2D biomPop = new Texture2D(pixWidth, pixHeight);
+        Color[] bp = biomeTexs[4].GetPixels();
+        for (int i = 0; i < bp.Length; i++) {
+            int xi = i % (int)sqrt(bp.Length);
+            int yi = (i - xi) / (int)sqrt(bp.Length);
+            bp[i] += pop.GetPixel(xi,yi) * 10f;
+        }
+        biomPop.SetPixels(bp);
+        biomPop.Apply();
 
         // Vi skickar en array med olika texturer från noiset.
-        Texture2D[] texs = {heightTex, cellTex, biomeTexs[0], biomeTexs[1], biomeTexs[2], biomeTexs[3], biomeTexs[4]};
+        Texture2D[] texs = {heightTex, cellTex, biomeTexs[0], biomeTexs[1], biomeTexs[2], biomeTexs[3], biomeTexs[4], pop, biomPop};
         return texs;
         
     }
